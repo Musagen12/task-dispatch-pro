@@ -1,7 +1,7 @@
 import { authStorage, getAuthHeader, type LoginResponse, type AuthTokens } from './auth';
 import { toast } from '@/hooks/use-toast';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 class ApiError extends Error {
   constructor(public status: number, message: string) {
