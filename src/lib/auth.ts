@@ -1,31 +1,41 @@
 export interface User {
   id: string;
-  email: string;
+  username: string;
   role: 'admin' | 'worker';
-  name: string;
+  status?: 'active' | 'under_investigation';
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface AuthTokens {
-  access: string;
-  refresh: string;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
 }
 
 export interface LoginResponse {
-  user: User;
-  tokens: AuthTokens;
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  role: string;
 }
 
-const TOKEN_KEY = 'auth_tokens';
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_KEY = 'auth_user';
 
 export const authStorage = {
-  getTokens: (): AuthTokens | null => {
-    const tokens = localStorage.getItem(TOKEN_KEY);
-    return tokens ? JSON.parse(tokens) : null;
+  getAccessToken: (): string | null => {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
   },
 
-  setTokens: (tokens: AuthTokens) => {
-    localStorage.setItem(TOKEN_KEY, JSON.stringify(tokens));
+  getRefreshToken: (): string | null => {
+    return localStorage.getItem(REFRESH_TOKEN_KEY);
+  },
+
+  setTokens: (accessToken: string, refreshToken: string) => {
+    localStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+    localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   },
 
   getUser: (): User | null => {
@@ -38,18 +48,19 @@ export const authStorage = {
   },
 
   clear: () => {
-    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   }
 };
 
 export const getAuthHeader = (): Record<string, string> => {
-  const tokens = authStorage.getTokens();
-  return tokens ? { Authorization: `Bearer ${tokens.access}` } : {};
+  const accessToken = authStorage.getAccessToken();
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!authStorage.getTokens() && !!authStorage.getUser();
+  return !!authStorage.getAccessToken() && !!authStorage.getUser();
 };
 
 export const logout = () => {

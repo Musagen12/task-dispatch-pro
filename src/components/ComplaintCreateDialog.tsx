@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { createComplaint } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { MapPin, Paperclip } from 'lucide-react';
@@ -16,9 +17,17 @@ interface ComplaintCreateDialogProps {
 
 export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }: ComplaintCreateDialogProps) => {
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const complaintCategories = [
+    { value: 'poor_quality', label: 'Poor Quality' },
+    { value: 'delay', label: 'Delay' },
+    { value: 'misconduct', label: 'Misconduct' },
+    { value: 'other', label: 'Other' }
+  ];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,11 +65,11 @@ export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!description) {
+    if (!description || !category) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Please provide a description",
+        description: "Please provide a description and category",
       });
       return;
     }
@@ -69,8 +78,8 @@ export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }
     try {
       const complaintData = {
         description,
-        location: location || undefined,
-        status: 'new'
+        category,
+        location: location || undefined
       };
       
       await createComplaint(complaintData, selectedFile || undefined);
@@ -81,6 +90,7 @@ export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }
       });
       
       setDescription('');
+      setCategory('');
       setLocation('');
       setSelectedFile(null);
       onOpenChange(false);
@@ -113,6 +123,22 @@ export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }
               rows={4}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="category">Category</Label>
+            <Select value={category} onValueChange={setCategory}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select complaint category" />
+              </SelectTrigger>
+              <SelectContent>
+                {complaintCategories.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">

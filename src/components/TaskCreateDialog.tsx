@@ -44,8 +44,7 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
       await createTask({
         title,
         description,
-        assigned_to: assignedTo,
-        status: 'assigned'
+        assigned_to: assignedTo
       });
       
       toast({

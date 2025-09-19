@@ -1,4 +1,4 @@
-import { authStorage, getAuthHeader, type LoginResponse, type AuthTokens } from './auth';
+import { authStorage, getAuthHeader, type LoginResponse, type User } from './auth';
 import { toast } from '@/hooks/use-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -12,9 +12,10 @@ class ApiError extends Error {
 
 async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
+  queryParams: string = ''
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${API_BASE_URL}${endpoint}${queryParams}`;
   const headers = {
     'Content-Type': 'application/json',
     ...getAuthHeader(),
@@ -41,7 +42,7 @@ async function apiRequest<T>(
         try {
           await refreshToken();
           // Retry the original request with new token
-          return apiRequest(endpoint, options);
+          return apiRequest(endpoint, options, queryParams);
         } catch {
           // Refresh failed, redirect to login
           authStorage.clear();
@@ -68,42 +69,77 @@ async function apiRequest<T>(
 }
 
 // Auth API
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
+export const login = async (username: string, password: string): Promise<LoginResponse> => {
   const data = await apiRequest<LoginResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
   });
   
-  authStorage.setTokens(data.tokens);
-  authStorage.setUser(data.user);
+  authStorage.setTokens(data.access_token, data.refresh_token);
+  
+  // Fetch user profile based on role
+  let userProfile: User;
+  if (data.role === 'admin') {
+    // For admin, we'll need to implement a profile endpoint or use a placeholder
+    userProfile = {
+      id: 'admin-' + Date.now(),
+      username: username,
+      role: 'admin' as const,
+      created_at: new Date().toISOString()
+    };
+  } else {
+    userProfile = await apiRequest<User>('/worker/profile');
+  }
+  
+  authStorage.setUser(userProfile);
   return data;
 };
 
-export const refreshToken = async (): Promise<AuthTokens> => {
-  const tokens = authStorage.getTokens();
-  if (!tokens) throw new Error('No refresh token');
+export const refreshToken = async (): Promise<{access_token: string}> => {
+  const refreshToken = authStorage.getRefreshToken();
+  if (!refreshToken) throw new Error('No refresh token');
 
-  const data = await apiRequest<AuthTokens>('/auth/refresh', {
+  const data = await apiRequest<{access_token: string}>('/auth/refresh', {
     method: 'POST',
-    body: JSON.stringify({ refresh: tokens.refresh }),
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
   
-  authStorage.setTokens(data);
+  authStorage.setTokens(data.access_token, refreshToken);
   return data;
 };
 
 
-// Tasks API
-export const getTasks = (): Promise<any[]> => apiRequest('/tasks/');
-export const createTask = (task: any) => apiRequest('/tasks/', { method: 'POST', body: JSON.stringify(task) });
-export const updateTaskStatus = (id: string, status: string) => 
-  apiRequest(`/tasks/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
+// Admin APIs
+export const getWorkers = (): Promise<any[]> => apiRequest('/admin/workers/');
+export const addWorker = (username: string, password: string) => 
+  apiRequest('/admin/workers/', { 
+    method: 'POST', 
+    body: JSON.stringify({}),
+    headers: { ...getAuthHeader(), 'Content-Type': 'application/json' }
+  }, `?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+export const removeWorker = (username: string) => apiRequest(`/admin/workers/${username}`, { method: 'DELETE' });
+export const updateWorkerStatus = (username: string, status: string) => 
+  apiRequest(`/admin/workers/${username}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
 
-export const uploadTaskPhoto = async (id: string, file: File) => {
+export const getTasks = (): Promise<any[]> => apiRequest('/admin/tasks/');
+export const createTask = (task: {title: string, description: string, assigned_to: string}) => 
+  apiRequest(`/admin/tasks/?title=${encodeURIComponent(task.title)}&description=${encodeURIComponent(task.description)}&assigned_to=${encodeURIComponent(task.assigned_to)}`, { method: 'POST' });
+export const updateTaskStatus = (taskId: string, status: string) => 
+  apiRequest(`/admin/tasks/${taskId}?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
+export const deleteTask = (taskId: string) => apiRequest(`/admin/tasks/${taskId}`, { method: 'DELETE' });
+
+export const getAdminComplaints = (): Promise<any[]> => apiRequest('/admin/complaints/');
+export const updateComplaintStatus = (complaintId: string, status: string) => 
+  apiRequest(`/admin/complaints/${complaintId}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
+
+// Worker APIs
+export const getWorkerTasks = (): Promise<any[]> => apiRequest('/worker/tasks');
+export const acknowledgeTask = (taskId: string) => apiRequest(`/worker/tasks/${taskId}/acknowledge`, { method: 'PATCH' });
+export const uploadTaskPhoto = async (taskId: string, file: File) => {
   const formData = new FormData();
-  formData.append('file', file);
+  formData.append('files', file);
   
-  return fetch(`${API_BASE_URL}/tasks/${id}/upload_photo`, {
+  return fetch(`${API_BASE_URL}/worker/tasks/${taskId}/evidence`, {
     method: 'POST',
     headers: getAuthHeader(),
     body: formData,
@@ -113,31 +149,27 @@ export const uploadTaskPhoto = async (id: string, file: File) => {
   });
 };
 
-// Complaints API
+export const submitWorkerComplaint = (description: string) => 
+  apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });
+
+// Public Complaints API
 export const getComplaints = (): Promise<any[]> => apiRequest('/complaints/');
 export const createComplaint = async (complaint: any, file?: File) => {
-  if (file) {
-    const formData = new FormData();
-    Object.keys(complaint).forEach(key => {
-      formData.append(key, complaint[key]);
-    });
-    formData.append('file', file);
-    
-    return fetch(`${API_BASE_URL}/complaints/`, {
-      method: 'POST',
-      headers: getAuthHeader(),
-      body: formData,
-    }).then(response => {
-      if (!response.ok) throw new Error('Submit failed');
-      return response.json();
-    });
-  }
+  const formData = new FormData();
+  formData.append('description', complaint.description);
+  formData.append('category', complaint.category);
+  if (complaint.location) formData.append('location', complaint.location);
+  if (file) formData.append('file', file);
   
-  return apiRequest('/complaints/', { method: 'POST', body: JSON.stringify(complaint) });
+  return fetch(`${API_BASE_URL}/complaints/`, {
+    method: 'POST',
+    headers: getAuthHeader(),
+    body: formData,
+  }).then(response => {
+    if (!response.ok) throw new Error('Submit failed');
+    return response.json();
+  });
 };
 
-export const updateComplaintStatus = (id: string, status: string) =>
-  apiRequest(`/complaints/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) });
-
 // Audit API
-export const getAuditLogs = (): Promise<any[]> => apiRequest('/audit_logs/');
+export const getAuditLogs = (): Promise<any[]> => apiRequest('/admin/audit-logs/');

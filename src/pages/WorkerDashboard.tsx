@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getTasks, getComplaints, updateTaskStatus, uploadTaskPhoto } from '@/lib/api';
+import { getWorkerTasks, getComplaints, acknowledgeTask, uploadTaskPhoto } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';
@@ -46,7 +46,7 @@ const WorkerDashboard = () => {
   const loadData = async () => {
     try {
       const [tasksData, complaintsData] = await Promise.all([
-        getTasks(),
+        getWorkerTasks(),
         getComplaints()
       ]);
       
@@ -69,7 +69,9 @@ const WorkerDashboard = () => {
 
   const handleTaskStatusUpdate = async (taskId: string, status: string) => {
     try {
-      await updateTaskStatus(taskId, status);
+      if (status === 'acknowledged') {
+        await acknowledgeTask(taskId);
+      }
       await loadData();
       toast({
         title: "Success",
@@ -119,7 +121,7 @@ const WorkerDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Worker Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.name}</p>
+            <p className="text-muted-foreground">Welcome back, {user?.username}</p>
           </div>
           <Button variant="outline" onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />

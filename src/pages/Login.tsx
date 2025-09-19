@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 import { Loader2, Shield } from 'lucide-react';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -25,13 +25,13 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await login(email, password);
+      const response = await login(username, password);
       toast({
         title: "Welcome back!",
-        description: `Logged in as ${response.user.name}`,
+        description: `Logged in successfully`,
       });
       
-      navigate(response.user.role === 'admin' ? '/admin' : '/worker');
+      navigate(response.role === 'admin' ? '/admin' : '/worker');
     } catch (error) {
       // Error is already handled by the API layer
     } finally {
@@ -54,13 +54,13 @@ const Login = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>

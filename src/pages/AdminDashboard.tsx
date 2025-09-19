@@ -5,13 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage, logout } from '@/lib/auth';
-import { getTasks, getComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus } from '@/lib/api';
+import { getTasks, getComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText } from 'lucide-react';
 import { TaskCreateDialog } from '@/components/TaskCreateDialog';
+import { WorkerManagementDialog } from '@/components/WorkerManagementDialog';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { AuditLogsTable } from '@/components/AuditLogsTable';
+import { WorkersTable } from '@/components/WorkersTable';
 
 interface Task {
   id: string;
@@ -49,7 +51,9 @@ const AdminDashboard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isWorkerDialogOpen, setIsWorkerDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const user = authStorage.getUser();
@@ -60,15 +64,17 @@ const AdminDashboard = () => {
 
   const loadData = async () => {
     try {
-      const [tasksData, complaintsData, auditData] = await Promise.all([
+      const [tasksData, complaintsData, auditData, workersData] = await Promise.all([
         getTasks(),
         getComplaints(),
-        getAuditLogs()
+        getAuditLogs(),
+        getWorkers()
       ]);
       
       setTasks(tasksData);
       setComplaints(complaintsData);
       setAuditLogs(auditData);
+      setWorkers(workersData);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -131,7 +137,7 @@ const AdminDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.name}</p>
+            <p className="text-muted-foreground">Welcome back, {user?.username}</p>
           </div>
           <Button variant="outline" onClick={logout}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -185,19 +191,40 @@ const AdminDashboard = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="tasks" className="space-y-6">
+        <Tabs defaultValue="workers" className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
+              <TabsTrigger value="workers">Workers</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
               <TabsTrigger value="complaints">Complaints</TabsTrigger>
               <TabsTrigger value="audit">Audit Logs</TabsTrigger>
             </TabsList>
             
-            <Button onClick={() => setIsTaskDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create Task
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsWorkerDialogOpen(true)}>
+                <Users className="mr-2 h-4 w-4" />
+                Add Worker
+              </Button>
+              <Button onClick={() => setIsTaskDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Task
+              </Button>
+            </div>
           </div>
+
+          <TabsContent value="workers">
+            <WorkersTable 
+              workers={workers}
+              onStatusUpdate={async (username: string, status: string) => {
+                await updateWorkerStatus(username, status);
+                await loadData();
+              }}
+              onRemoveWorker={async (username: string) => {
+                await removeWorker(username);
+                await loadData();
+              }}
+            />
+          </TabsContent>
 
           <TabsContent value="tasks">
             <TasksTable 
@@ -225,6 +252,12 @@ const AdminDashboard = () => {
         open={isTaskDialogOpen}
         onOpenChange={setIsTaskDialogOpen}
         onTaskCreated={loadData}
+      />
+
+      <WorkerManagementDialog 
+        open={isWorkerDialogOpen}
+        onOpenChange={setIsWorkerDialogOpen}
+        onWorkerAdded={loadData}
       />
     </div>
   );
