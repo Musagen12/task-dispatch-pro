@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createTask } from '@/lib/api';
+import { createTask, getWorkers } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface TaskCreateDialogProps {
@@ -14,18 +14,44 @@ interface TaskCreateDialogProps {
   onTaskCreated: () => void;
 }
 
-// Mock workers data - in real app this would come from API
-const mockWorkers = [
-  { id: '1', name: 'John Doe', email: 'john@example.com' },
-  { id: '2', name: 'Jane Smith', email: 'jane@example.com' },
-  { id: '3', name: 'Mike Johnson', email: 'mike@example.com' },
-];
+interface Worker {
+  id: string;
+  username: string;
+  role: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCreateDialogProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [workers, setWorkers] = useState<Worker[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingWorkers, setIsLoadingWorkers] = useState(true);
+
+  useEffect(() => {
+    if (open) {
+      loadWorkers();
+    }
+  }, [open]);
+
+  const loadWorkers = async () => {
+    try {
+      setIsLoadingWorkers(true);
+      const workersData = await getWorkers();
+      setWorkers(workersData.filter(worker => worker.status === 'active'));
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load workers",
+      });
+    } finally {
+      setIsLoadingWorkers(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,14 +126,14 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
           
           <div className="space-y-2">
             <Label htmlFor="worker">Assign to Worker</Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo}>
+            <Select value={assignedTo} onValueChange={setAssignedTo} disabled={isLoadingWorkers}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a worker" />
+                <SelectValue placeholder={isLoadingWorkers ? "Loading workers..." : "Select a worker"} />
               </SelectTrigger>
               <SelectContent>
-                {mockWorkers.map((worker) => (
-                  <SelectItem key={worker.id} value={worker.id}>
-                    {worker.name} ({worker.email})
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.username}>
+                    {worker.username}
                   </SelectItem>
                 ))}
               </SelectContent>
