@@ -69,7 +69,7 @@ export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTa
           Assigned on {new Date(task.created_at).toLocaleDateString()}
         </div>
 
-        {task.status === 'assigned' && (
+        {task.status === 'pending' && (
           <div className="flex gap-4">
             <Button onClick={handleAcknowledge} variant="outline">
               <Check className="mr-2 h-4 w-4" />
@@ -78,7 +78,7 @@ export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTa
           </div>
         )}
 
-        {task.status === 'acknowledged' && (
+        {task.status === 'in_progress' && (
           <div className="space-y-4">
             <div>
               <h4 className="font-medium mb-2">Upload Completion Photo</h4>

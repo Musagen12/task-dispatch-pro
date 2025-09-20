@@ -46,14 +46,12 @@ const WorkerDashboard = () => {
 
   const loadData = async () => {
     try {
-      const [tasksData, complaintsData] = await Promise.all([
-        getWorkerTasks(),
-        getComplaints()
-      ]);
+      const tasksData = await getWorkerTasks();
       
-      // Filter tasks for current worker
-      const workerTasks = tasksData.filter((task: Task) => task.assigned_to === user?.id);
-      const workerComplaints = complaintsData.filter((complaint: Complaint) => complaint.submitted_by === user?.id);
+      // All tasks from worker endpoint are already filtered by backend
+      const workerTasks = tasksData;
+      // Worker complaints are now only viewable by admins, so don't fetch them here
+      const workerComplaints: Complaint[] = [];
       
       setTasks(workerTasks);
       setComplaints(workerComplaints);
@@ -100,7 +98,7 @@ const WorkerDashboard = () => {
     }
   };
 
-  const activeTask = tasks.find(task => task.status === 'assigned' || task.status === 'acknowledged');
+  const activeTask = tasks.find(task => task.status === 'pending' || task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
   const pendingComplaints = complaints.filter(complaint => complaint.status === 'new' || complaint.status === 'in_progress');
 
@@ -187,7 +185,6 @@ const WorkerDashboard = () => {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-              <TabsTrigger value="complaints">My Complaints</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
             
@@ -206,13 +203,6 @@ const WorkerDashboard = () => {
             />
           </TabsContent>
 
-          <TabsContent value="complaints">
-            <ComplaintsTable 
-              complaints={complaints}
-              onStatusUpdate={() => {}} // Workers can't update complaint status
-              isAdmin={false}
-            />
-          </TabsContent>
 
           <TabsContent value="profile">
             <WorkerProfileCard />

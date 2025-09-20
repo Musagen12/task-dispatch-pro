@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage, logout } from '@/lib/auth';
-import { getTasks, getComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
+import { getTasks, getComplaints, getAdminComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText } from 'lucide-react';
 import { TaskCreateDialog } from '@/components/TaskCreateDialog';
@@ -66,7 +66,7 @@ const AdminDashboard = () => {
     try {
       const [tasksData, complaintsData, auditData, workersData] = await Promise.all([
         getTasks(),
-        getComplaints(),
+        getAdminComplaints(), // Use admin endpoint for complaints to include worker complaints
         getAuditLogs(),
         getWorkers()
       ]);
