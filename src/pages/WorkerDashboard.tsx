@@ -3,13 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getWorkerTasks, getComplaints, acknowledgeTask, uploadTaskPhoto } from '@/lib/api';
+import { getWorkerTasks, getComplaints, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle } from 'lucide-react';
+import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { ComplaintCreateDialog } from '@/components/ComplaintCreateDialog';
+import { WorkerProfileCard } from '@/components/WorkerProfileCard';
 
 interface Task {
   id: string;
@@ -82,19 +83,19 @@ const WorkerDashboard = () => {
     }
   };
 
-  const handlePhotoUpload = async (taskId: string, file: File) => {
+  const handlePhotoUpload = async (taskId: string, files: File[]) => {
     try {
-      await uploadTaskPhoto(taskId, file);
+      await uploadTaskEvidence(taskId, files);
       await loadData();
       toast({
         title: "Success",
-        description: "Photo uploaded successfully",
+        description: "Evidence uploaded successfully",
       });
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Upload Failed",
-        description: "Failed to upload photo",
+        description: "Failed to upload evidence",
       });
     }
   };
@@ -182,11 +183,12 @@ const WorkerDashboard = () => {
         )}
 
         {/* Main Content */}
-        <Tabs defaultValue="history" className="space-y-6">
+        <Tabs defaultValue="tasks" className="space-y-6">
           <div className="flex items-center justify-between">
             <TabsList>
-              <TabsTrigger value="history">Task History</TabsTrigger>
+              <TabsTrigger value="tasks">My Tasks</TabsTrigger>
               <TabsTrigger value="complaints">My Complaints</TabsTrigger>
+              <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
             
             <Button onClick={() => setIsComplaintDialogOpen(true)}>
@@ -195,10 +197,11 @@ const WorkerDashboard = () => {
             </Button>
           </div>
 
-          <TabsContent value="history">
+          <TabsContent value="tasks">
             <TasksTable 
               tasks={tasks} 
               onStatusUpdate={handleTaskStatusUpdate}
+              onPhotoUpload={handlePhotoUpload}
               isAdmin={false}
             />
           </TabsContent>
@@ -209,6 +212,10 @@ const WorkerDashboard = () => {
               onStatusUpdate={() => {}} // Workers can't update complaint status
               isAdmin={false}
             />
+          </TabsContent>
+
+          <TabsContent value="profile">
+            <WorkerProfileCard />
           </TabsContent>
         </Tabs>
       </div>

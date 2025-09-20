@@ -17,7 +17,7 @@ interface Task {
 interface ActiveTaskCardProps {
   task: Task;
   onStatusUpdate: (taskId: string, status: string) => void;
-  onPhotoUpload: (taskId: string, file: File) => void;
+  onPhotoUpload: (taskId: string, files: File[]) => void;
 }
 
 export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTaskCardProps) => {
@@ -46,7 +46,7 @@ export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTa
 
     setIsUploading(true);
     try {
-      await onPhotoUpload(task.id, selectedFile);
+      await onPhotoUpload(task.id, [selectedFile]);
       onStatusUpdate(task.id, 'completed');
     } finally {
       setIsUploading(false);

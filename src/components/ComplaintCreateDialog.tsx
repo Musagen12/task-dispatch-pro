@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createComplaint } from '@/lib/api';
+import { submitWorkerComplaint } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { MapPin, Paperclip } from 'lucide-react';
 
@@ -76,13 +76,7 @@ export const ComplaintCreateDialog = ({ open, onOpenChange, onComplaintCreated }
 
     setIsLoading(true);
     try {
-      const complaintData = {
-        description,
-        category,
-        location: location || undefined
-      };
-      
-      await createComplaint(complaintData, selectedFile || undefined);
+      await submitWorkerComplaint(description);
       
       toast({
         title: "Success",

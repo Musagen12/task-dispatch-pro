@@ -15,6 +15,7 @@ import {
   Star
 } from 'lucide-react';
 import heroImage from '@/assets/hero-image.jpg';
+import { PublicComplaintForm } from '@/components/PublicComplaintForm';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -227,6 +228,19 @@ const Landing = () => {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Public Complaints Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center space-y-4 mb-12">
+            <h2 className="text-3xl lg:text-4xl font-bold">Submit a Service Complaint</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Experienced an issue with our field service? Let us know and we'll investigate promptly.
+            </p>
+          </div>
+          <PublicComplaintForm />
         </div>
       </section>
 

@@ -134,10 +134,12 @@ export const updateComplaintStatus = (complaintId: string, status: string) =>
 
 // Worker APIs
 export const getWorkerTasks = (): Promise<any[]> => apiRequest('/worker/tasks');
+export const getWorkerProfile = (): Promise<User> => apiRequest('/worker/profile');
 export const acknowledgeTask = (taskId: string) => apiRequest(`/worker/tasks/${taskId}/acknowledge`, { method: 'PATCH' });
-export const uploadTaskPhoto = async (taskId: string, file: File) => {
+
+export const uploadTaskEvidence = async (taskId: string, files: File[]) => {
   const formData = new FormData();
-  formData.append('files', file);
+  files.forEach(file => formData.append('files', file));
   
   return fetch(`${API_BASE_URL}/worker/tasks/${taskId}/evidence`, {
     method: 'POST',
@@ -149,21 +151,24 @@ export const uploadTaskPhoto = async (taskId: string, file: File) => {
   });
 };
 
+export const updateWorkerPassword = (password: string) => 
+  apiRequest(`/worker/profile/password?password=${encodeURIComponent(password)}`, { method: 'PATCH' });
+
 export const submitWorkerComplaint = (description: string) => 
   apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });
 
 // Public Complaints API
 export const getComplaints = (): Promise<any[]> => apiRequest('/complaints/');
-export const createComplaint = async (complaint: any, file?: File) => {
+
+export const createComplaint = async (description: string, category: string, location?: string, file?: File) => {
   const formData = new FormData();
-  formData.append('description', complaint.description);
-  formData.append('category', complaint.category);
-  if (complaint.location) formData.append('location', complaint.location);
+  formData.append('description', description);
+  formData.append('category', category);
+  if (location) formData.append('location', location);
   if (file) formData.append('file', file);
   
   return fetch(`${API_BASE_URL}/complaints/`, {
     method: 'POST',
-    headers: getAuthHeader(),
     body: formData,
   }).then(response => {
     if (!response.ok) throw new Error('Submit failed');

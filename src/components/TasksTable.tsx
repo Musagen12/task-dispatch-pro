@@ -22,10 +22,11 @@ interface Task {
 interface TasksTableProps {
   tasks: Task[];
   onStatusUpdate: (taskId: string, status: string) => void;
+  onPhotoUpload?: (taskId: string, files: File[]) => void;
   isAdmin: boolean;
 }
 
-export const TasksTable = ({ tasks, onStatusUpdate, isAdmin }: TasksTableProps) => {
+export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: TasksTableProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const statusOptions = [

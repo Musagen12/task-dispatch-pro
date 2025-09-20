@@ -229,7 +229,7 @@ const AdminDashboard = () => {
           <TabsContent value="tasks">
             <TasksTable 
               tasks={tasks} 
-              onStatusUpdate={handleTaskStatusUpdate}
+              onStatusUpdate={() => {}} // Admins cannot update task status - only workers can
               isAdmin={true}
             />
           </TabsContent>
