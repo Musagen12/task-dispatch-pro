@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, Paperclip, RefreshCw } from 'lucide-react';
-import { formatDateTime } from '@/lib/dateUtils';
+import { formatDateTimeString } from '@/lib/dateUtils';
 
 interface Complaint {
   id: string;
@@ -70,7 +70,7 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
                     <StatusBadge status={complaint.status} />
                   </TableCell>
                   <TableCell>
-                    {formatDateTime(complaint.created_at)}
+                    {formatDateTimeString(complaint.created_at)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
                               </div>
                               <div>
                                 <h4 className="font-medium">Submitted</h4>
-                                <p className="text-sm">{formatDateTime(complaint.created_at)}</p>
+                                <p className="text-sm">{formatDateTimeString(complaint.created_at)}</p>
                               </div>
                             </div>
                             {complaint.file_url && (

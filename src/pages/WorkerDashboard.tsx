@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getWorkerTasks, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
+import { getWorkerTasks, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint, getWorkerComplaintCount } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User, MessageSquare } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';
@@ -35,7 +35,7 @@ interface Complaint {
 
 const WorkerDashboard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [pendingComplaintsCount, setPendingComplaintsCount] = useState(0);
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -47,14 +47,16 @@ const WorkerDashboard = () => {
 
   const loadData = async () => {
     try {
-        const [tasksData] = await Promise.all([
-          getWorkerTasks()
-        ]);
+      const [tasksData, complaintsCount] = await Promise.all([
+        getWorkerTasks(),
+        getWorkerComplaintCount()
+      ]);
       
       // All tasks from worker endpoint are already filtered by backend
       const workerTasks = tasksData;
       
-        setTasks(workerTasks);
+      setTasks(workerTasks);
+      setPendingComplaintsCount(complaintsCount);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -100,7 +102,6 @@ const WorkerDashboard = () => {
 
   const activeTask = tasks.find(task => task.status === 'pending' || task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
-  const pendingComplaints = complaints.filter(complaint => complaint.status === 'pending');
 
   if (isLoading) {
     return (
@@ -163,7 +164,7 @@ const WorkerDashboard = () => {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-info">{pendingComplaints.length}</div>
+              <div className="text-2xl font-bold text-info">{pendingComplaintsCount}</div>
             </CardContent>
           </Card>
         </div>

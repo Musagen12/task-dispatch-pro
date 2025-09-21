@@ -51,18 +51,27 @@ async function apiRequest<T>(
         }
       }
       
-      toast({
-        variant: "destructive",
-        title: "API Error",
-        description: error.message,
-      });
+      // Handle specific login errors
+      if (endpoint === '/auth/login' && error.status === 401) {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Invalid credentials. Please check your username and password.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Authentication Error",
+          description: error.message,
+        });
+      }
       throw error;
     }
     
     toast({
       variant: "destructive",
-      title: "Network Error",
-      description: "Failed to connect to the server",
+      title: "Connection Error",
+      description: "Unable to connect to the server. Please check your internet connection.",
     });
     throw error;
   }
@@ -154,11 +163,18 @@ export const uploadTaskEvidence = async (taskId: string, files: File[]) => {
 export const updateWorkerPassword = (password: string) => 
   apiRequest(`/worker/profile/password?password=${encodeURIComponent(password)}`, { method: 'PATCH' });
 
-// Note: Worker complaints are only for submission, not retrieval
-// Workers cannot view their own complaints - only admins can see them
-
 export const submitWorkerComplaint = (description: string) => 
   apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });
+
+export const getWorkerComplaintCount = async (): Promise<number> => {
+  const user = authStorage.getUser();
+  if (!user) return 0;
+  
+  const complaints = await apiRequest<any[]>('/complaints/');
+  return complaints.filter(complaint => 
+    complaint.worker_id === user.id && complaint.status === 'pending'
+  ).length;
+};
 
 // Public Complaints API
 export const getComplaints = (): Promise<any[]> => apiRequest('/complaints/');
