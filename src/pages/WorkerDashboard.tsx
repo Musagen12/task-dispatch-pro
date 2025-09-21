@@ -3,14 +3,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getWorkerTasks, getComplaints, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
+import { getWorkerTasks, getWorkerComplaints, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User } from 'lucide-react';
+import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User, MessageSquare } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { ComplaintCreateDialog } from '@/components/ComplaintCreateDialog';
 import { WorkerProfileCard } from '@/components/WorkerProfileCard';
+import { WorkerComplaintForm } from '@/components/WorkerComplaintForm';
 
 interface Task {
   id: string;
@@ -46,15 +47,16 @@ const WorkerDashboard = () => {
 
   const loadData = async () => {
     try {
-      const tasksData = await getWorkerTasks();
+      const [tasksData, complaintsData] = await Promise.all([
+        getWorkerTasks(),
+        getWorkerComplaints()
+      ]);
       
       // All tasks from worker endpoint are already filtered by backend
       const workerTasks = tasksData;
-      // Worker complaints are now only viewable by admins, so don't fetch them here
-      const workerComplaints: Complaint[] = [];
       
       setTasks(workerTasks);
-      setComplaints(workerComplaints);
+      setComplaints(complaintsData);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -100,7 +102,7 @@ const WorkerDashboard = () => {
 
   const activeTask = tasks.find(task => task.status === 'pending' || task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
-  const pendingComplaints = complaints.filter(complaint => complaint.status === 'new' || complaint.status === 'in_progress');
+  const pendingComplaints = complaints.filter(complaint => complaint.status === 'pending');
 
   if (isLoading) {
     return (
@@ -159,11 +161,11 @@ const WorkerDashboard = () => {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Complaints</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">My Complaints</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-warning">{pendingComplaints.length}</div>
+              <div className="text-2xl font-bold text-info">{pendingComplaints.length}</div>
             </CardContent>
           </Card>
         </div>
@@ -185,13 +187,13 @@ const WorkerDashboard = () => {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="tasks">My Tasks</TabsTrigger>
+              <TabsTrigger value="complaints">Submit Complaint</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
             
-            <Button onClick={() => setIsComplaintDialogOpen(true)}>
-              <AlertTriangle className="mr-2 h-4 w-4" />
-              Submit Complaint
-            </Button>
+            <div className="text-sm text-muted-foreground">
+              {completedTasks.length} completed, {tasks.length - completedTasks.length} remaining
+            </div>
           </div>
 
           <TabsContent value="tasks">
@@ -203,6 +205,10 @@ const WorkerDashboard = () => {
             />
           </TabsContent>
 
+
+          <TabsContent value="complaints">
+            <WorkerComplaintForm onComplaintSubmitted={loadData} />
+          </TabsContent>
 
           <TabsContent value="profile">
             <WorkerProfileCard />

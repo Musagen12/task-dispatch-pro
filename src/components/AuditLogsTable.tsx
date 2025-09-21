@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
+import { formatDateTime } from '@/lib/dateUtils';
 
 interface AuditLog {
   id: string;
@@ -47,9 +48,8 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
             <TableHeader>
               <TableRow>
                 <TableHead>Action</TableHead>
-                <TableHead>Table</TableHead>
-                <TableHead>Record ID</TableHead>
                 <TableHead>User ID</TableHead>
+                <TableHead>Details</TableHead>
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -63,18 +63,22 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <code className="text-xs bg-muted px-1 py-0.5 rounded">
-                      {log.table_name}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs">{log.record_id}</code>
-                  </TableCell>
-                  <TableCell>
                     <code className="text-xs">{log.user_id}</code>
                   </TableCell>
                   <TableCell>
-                    {new Date(log.created_at).toLocaleString()}
+                    {log.details ? (
+                      <div className="max-w-xs truncate text-xs">
+                        {typeof log.details === 'object' 
+                          ? JSON.stringify(log.details).substring(0, 50) + '...'
+                          : String(log.details).substring(0, 50) + '...'
+                        }
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {formatDateTime(log.created_at)}
                   </TableCell>
                   <TableCell>
                     <Dialog>
@@ -96,25 +100,13 @@ export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
                               </Badge>
                             </div>
                             <div>
-                              <h4 className="font-medium">Table</h4>
-                              <code className="text-sm bg-muted px-2 py-1 rounded">
-                                {log.table_name}
-                              </code>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <h4 className="font-medium">Record ID</h4>
-                              <code className="text-sm">{log.record_id}</code>
-                            </div>
-                            <div>
                               <h4 className="font-medium">User ID</h4>
                               <code className="text-sm">{log.user_id}</code>
                             </div>
                           </div>
                           <div>
                             <h4 className="font-medium">Timestamp</h4>
-                            <p className="text-sm">{new Date(log.created_at).toLocaleString()}</p>
+                            <p className="text-sm">{formatDateTime(log.created_at)}</p>
                           </div>
                           {log.details && (
                             <div>

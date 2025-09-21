@@ -5,8 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, Camera } from 'lucide-react';
+import { formatDateTime } from '@/lib/dateUtils';
 
 interface Task {
   id: string;
@@ -75,7 +75,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: Ta
                     </TableCell>
                   )}
                   <TableCell>
-                    {new Date(task.created_at).toLocaleDateString()}
+                    {formatDateTime(task.created_at)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -105,7 +105,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: Ta
                               </div>
                               <div>
                                 <h4 className="font-medium">Created</h4>
-                                <p className="text-sm">{new Date(task.created_at).toLocaleString()}</p>
+                                <p className="text-sm">{formatDateTime(task.created_at)}</p>
                               </div>
                             </div>
                             {task.photo_url && (
@@ -116,26 +116,6 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: Ta
                                   alt="Task completion" 
                                   className="max-w-full h-64 object-cover rounded-md border"
                                 />
-                              </div>
-                            )}
-                            {isAdmin && (
-                              <div>
-                                <h4 className="font-medium mb-2">Update Status</h4>
-                                <Select 
-                                  value={task.status} 
-                                  onValueChange={(value) => onStatusUpdate(task.id, value)}
-                                >
-                                  <SelectTrigger className="w-48">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {statusOptions.map((option) => (
-                                      <SelectItem key={option.value} value={option.value}>
-                                        {option.label}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
                               </div>
                             )}
                           </div>

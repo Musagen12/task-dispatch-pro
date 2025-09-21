@@ -5,7 +5,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, MapPin, Paperclip } from 'lucide-react';
+import { Eye, Paperclip, RefreshCw } from 'lucide-react';
+import { formatDateTime } from '@/lib/dateUtils';
 
 interface Complaint {
   id: string;
@@ -21,10 +22,11 @@ interface Complaint {
 interface ComplaintsTableProps {
   complaints: Complaint[];
   onStatusUpdate: (complaintId: string, status: string) => void;
+  onRefresh?: () => void;
   isAdmin: boolean;
 }
 
-export const ComplaintsTable = ({ complaints, onStatusUpdate, isAdmin }: ComplaintsTableProps) => {
+export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin }: ComplaintsTableProps) => {
   const statusOptions = [
     { value: 'new', label: 'New' },
     { value: 'in_progress', label: 'In Progress' },
@@ -34,10 +36,20 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, isAdmin }: Complai
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Complaints</CardTitle>
-        <CardDescription>
-          {isAdmin ? 'Manage all worker complaints' : 'Your submitted complaints and their status'}
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Complaints</CardTitle>
+            <CardDescription>
+              {isAdmin ? 'Manage all worker complaints' : 'Your submitted complaints and their status'}
+            </CardDescription>
+          </div>
+          {onRefresh && (
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -46,8 +58,6 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, isAdmin }: Complai
               <TableRow>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
-                {isAdmin && <TableHead>Submitted By</TableHead>}
-                <TableHead>Location</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -59,27 +69,8 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, isAdmin }: Complai
                   <TableCell>
                     <StatusBadge status={complaint.status} />
                   </TableCell>
-                  {isAdmin && (
-                    <TableCell>
-                      {complaint.worker_name ? (
-                        <Badge variant="outline">{complaint.worker_name}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Unknown</span>
-                      )}
-                    </TableCell>
-                  )}
                   <TableCell>
-                    {complaint.location ? (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span className="text-xs truncate max-w-24">{complaint.location}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(complaint.created_at).toLocaleDateString()}
+                    {formatDateTime(complaint.created_at)}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -105,18 +96,9 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, isAdmin }: Complai
                               </div>
                               <div>
                                 <h4 className="font-medium">Submitted</h4>
-                                <p className="text-sm">{new Date(complaint.created_at).toLocaleString()}</p>
+                                <p className="text-sm">{formatDateTime(complaint.created_at)}</p>
                               </div>
                             </div>
-                            {complaint.location && (
-                              <div>
-                                <h4 className="font-medium">Location</h4>
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="h-4 w-4" />
-                                  <p className="text-sm">{complaint.location}</p>
-                                </div>
-                              </div>
-                            )}
                             {complaint.file_url && (
                               <div>
                                 <h4 className="font-medium mb-2">Attached File</h4>

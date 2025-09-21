@@ -86,6 +86,23 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadComplaints = async () => {
+    try {
+      const complaintsData = await getAdminComplaints();
+      setComplaints(complaintsData);
+      toast({
+        title: "Success",
+        description: "Complaints refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh complaints",
+      });
+    }
+  };
+
   const handleTaskStatusUpdate = async (taskId: string, status: string) => {
     try {
       await updateTaskStatus(taskId, status);
@@ -114,8 +131,8 @@ const AdminDashboard = () => {
 
   const stats = {
     totalTasks: tasks.length,
-    activeTasks: tasks.filter(t => t.status === 'assigned' || t.status === 'in_progress').length,
-    pendingComplaints: complaints.filter(c => c.status === 'new' || c.status === 'in_progress').length,
+    activeTasks: tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length,
+    pendingComplaints: complaints.filter(c => c.status === 'pending').length,
     completedTasks: tasks.filter(t => t.status === 'completed').length,
   };
 
@@ -238,6 +255,7 @@ const AdminDashboard = () => {
             <ComplaintsTable 
               complaints={complaints}
               onStatusUpdate={handleComplaintStatusUpdate}
+              onRefresh={loadComplaints}
               isAdmin={true}
             />
           </TabsContent>

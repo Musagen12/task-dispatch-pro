@@ -154,6 +154,9 @@ export const uploadTaskEvidence = async (taskId: string, files: File[]) => {
 export const updateWorkerPassword = (password: string) => 
   apiRequest(`/worker/profile/password?password=${encodeURIComponent(password)}`, { method: 'PATCH' });
 
+export const getWorkerComplaints = (): Promise<any[]> => 
+  apiRequest('/worker/complaints');
+
 export const submitWorkerComplaint = (description: string) => 
   apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });
 
