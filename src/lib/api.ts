@@ -154,8 +154,8 @@ export const uploadTaskEvidence = async (taskId: string, files: File[]) => {
 export const updateWorkerPassword = (password: string) => 
   apiRequest(`/worker/profile/password?password=${encodeURIComponent(password)}`, { method: 'PATCH' });
 
-export const getWorkerComplaints = (): Promise<any[]> => 
-  apiRequest('/worker/complaints');
+// Note: Worker complaints are only for submission, not retrieval
+// Workers cannot view their own complaints - only admins can see them
 
 export const submitWorkerComplaint = (description: string) => 
   apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });

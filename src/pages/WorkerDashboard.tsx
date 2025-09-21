@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getWorkerTasks, getWorkerComplaints, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
+import { getWorkerTasks, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User, MessageSquare } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';
@@ -47,16 +47,14 @@ const WorkerDashboard = () => {
 
   const loadData = async () => {
     try {
-      const [tasksData, complaintsData] = await Promise.all([
-        getWorkerTasks(),
-        getWorkerComplaints()
-      ]);
+        const [tasksData] = await Promise.all([
+          getWorkerTasks()
+        ]);
       
       // All tasks from worker endpoint are already filtered by backend
       const workerTasks = tasksData;
       
-      setTasks(workerTasks);
-      setComplaints(complaintsData);
+        setTasks(workerTasks);
     } catch (error) {
       toast({
         variant: "destructive",

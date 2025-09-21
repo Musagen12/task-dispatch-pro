@@ -65,15 +65,15 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: Ta
                   <TableCell>
                     <StatusBadge status={task.status} />
                   </TableCell>
-                  {isAdmin && (
-                    <TableCell>
-                      {task.worker_name ? (
-                        <Badge variant="outline">{task.worker_name}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Unassigned</span>
-                      )}
-                    </TableCell>
-                  )}
+                   {isAdmin && (
+                     <TableCell>
+                       {task.assigned_to ? (
+                         <Badge variant="outline">{task.assigned_to}</Badge>
+                       ) : (
+                         <span className="text-muted-foreground">Unassigned</span>
+                       )}
+                     </TableCell>
+                   )}
                   <TableCell>
                     {formatDateTime(task.created_at)}
                   </TableCell>
