@@ -58,7 +58,8 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
               <TableRow>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
+                <TableHead>Created At</TableHead>
+                <TableHead>Evidence</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -71,6 +72,28 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
                   </TableCell>
                   <TableCell>
                     {formatDateTimeString(complaint.created_at)}
+                  </TableCell>
+                  <TableCell>
+                    {complaint.file_url ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="h-8"
+                      >
+                        <a
+                          href={complaint.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2"
+                        >
+                          <Paperclip className="h-3 w-3" />
+                          View
+                        </a>
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
