@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Eye, Camera, RefreshCw } from 'lucide-react';
+import { Eye, Camera, RefreshCw, FileImage, Download } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 
 interface Task {
@@ -17,6 +17,8 @@ interface Task {
   created_at: string;
   worker_name?: string;
   photo_url?: string;
+  evidence_count?: number;
+  evidence_urls?: string[];
 }
 
 interface TasksTableProps {
@@ -62,6 +64,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 {isAdmin && <TableHead>Worker</TableHead>}
+                <TableHead>Evidence</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -71,21 +74,54 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                 <TableRow key={task.id}>
                   <TableCell className="font-medium">{task.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{task.description}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={task.status} />
-                  </TableCell>
-                   {isAdmin && (
-                     <TableCell>
-                       {task.assigned_to ? (
-                         <Badge variant="outline">{task.assigned_to}</Badge>
+                   <TableCell>
+                     <StatusBadge status={task.status} />
+                   </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        {task.assigned_to ? (
+                          <Badge variant="outline">{task.assigned_to}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground">Unassigned</span>
+                        )}
+                      </TableCell>
+                    )}
+                   <TableCell>
+                     <div className="flex items-center gap-2">
+                       {task.evidence_count && task.evidence_count > 0 ? (
+                         <>
+                           <Badge variant="secondary" className="text-xs">
+                             <FileImage className="h-3 w-3 mr-1" />
+                             {task.evidence_count}
+                           </Badge>
+                           {task.evidence_urls && task.evidence_urls.length > 0 && (
+                             <Button 
+                               variant="ghost" 
+                               size="sm"
+                               onClick={() => {
+                                 task.evidence_urls?.forEach((url, index) => {
+                                   const link = document.createElement('a');
+                                   link.href = url;
+                                   link.download = `evidence-${task.id}-${index + 1}`;
+                                   link.target = '_blank';
+                                   document.body.appendChild(link);
+                                   link.click();
+                                   document.body.removeChild(link);
+                                 });
+                               }}
+                             >
+                               <Download className="h-3 w-3" />
+                             </Button>
+                           )}
+                         </>
                        ) : (
-                         <span className="text-muted-foreground">Unassigned</span>
+                         <span className="text-muted-foreground text-xs">No evidence</span>
                        )}
-                     </TableCell>
-                   )}
-                  <TableCell>
-                    {formatDateTime(task.created_at)}
-                  </TableCell>
+                     </div>
+                   </TableCell>
+                   <TableCell>
+                     {formatDateTime(task.created_at)}
+                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Dialog>
@@ -117,16 +153,32 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                                 <p className="text-sm">{formatDateTime(task.created_at)}</p>
                               </div>
                             </div>
-                            {task.photo_url && (
-                              <div>
-                                <h4 className="font-medium mb-2">Completion Photo</h4>
-                                <img 
-                                  src={task.photo_url} 
-                                  alt="Task completion" 
-                                  className="max-w-full h-64 object-cover rounded-md border"
-                                />
-                              </div>
-                            )}
+                             {task.photo_url && (
+                               <div>
+                                 <h4 className="font-medium mb-2">Completion Photo</h4>
+                                 <img 
+                                   src={task.photo_url} 
+                                   alt="Task completion" 
+                                   className="max-w-full h-64 object-cover rounded-md border"
+                                 />
+                               </div>
+                             )}
+                             {task.evidence_urls && task.evidence_urls.length > 0 && (
+                               <div>
+                                 <h4 className="font-medium mb-2">Evidence ({task.evidence_count || task.evidence_urls.length})</h4>
+                                 <div className="grid grid-cols-2 gap-2">
+                                   {task.evidence_urls.map((url, index) => (
+                                     <img 
+                                       key={index}
+                                       src={url} 
+                                       alt={`Evidence ${index + 1}`} 
+                                       className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
+                                       onClick={() => window.open(url, '_blank')}
+                                     />
+                                   ))}
+                                 </div>
+                               </div>
+                             )}
                           </div>
                         </DialogContent>
                       </Dialog>
