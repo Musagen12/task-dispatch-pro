@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserCheck, UserX } from 'lucide-react';
+import { Trash2, UserCheck, UserX, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface Worker {
@@ -19,9 +19,10 @@ interface WorkersTableProps {
   workers: Worker[];
   onStatusUpdate: (username: string, status: string) => void;
   onRemoveWorker: (username: string) => void;
+  onRefresh: () => void;
 }
 
-export const WorkersTable = ({ workers, onStatusUpdate, onRemoveWorker }: WorkersTableProps) => {
+export const WorkersTable = ({ workers, onStatusUpdate, onRemoveWorker, onRefresh }: WorkersTableProps) => {
   const handleStatusUpdate = async (username: string, status: string) => {
     try {
       await onStatusUpdate(username, status);
@@ -51,8 +52,16 @@ export const WorkersTable = ({ workers, onStatusUpdate, onRemoveWorker }: Worker
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workers</CardTitle>
-        <CardDescription>Manage worker accounts and their status</CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Workers</CardTitle>
+            <CardDescription>Manage worker accounts and their status</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={onRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>

@@ -68,6 +68,23 @@ const WorkerDashboard = () => {
     }
   };
 
+  const loadTasks = async () => {
+    try {
+      const tasksData = await getWorkerTasks();
+      setTasks(tasksData);
+      toast({
+        title: "Success",
+        description: "Tasks refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh tasks",
+      });
+    }
+  };
+
   const handleTaskStatusUpdate = async (taskId: string, status: string) => {
     try {
       if (status === 'acknowledged') {
@@ -200,6 +217,7 @@ const WorkerDashboard = () => {
               tasks={tasks} 
               onStatusUpdate={handleTaskStatusUpdate}
               onPhotoUpload={handlePhotoUpload}
+              onRefresh={loadTasks}
               isAdmin={false}
             />
           </TabsContent>

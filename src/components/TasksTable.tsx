@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Eye, Camera } from 'lucide-react';
+import { Eye, Camera, RefreshCw } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 
 interface Task {
@@ -23,10 +23,11 @@ interface TasksTableProps {
   tasks: Task[];
   onStatusUpdate: (taskId: string, status: string) => void;
   onPhotoUpload?: (taskId: string, files: File[]) => void;
+  onRefresh: () => void;
   isAdmin: boolean;
 }
 
-export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: TasksTableProps) => {
+export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, isAdmin }: TasksTableProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const statusOptions = [
@@ -39,10 +40,18 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, isAdmin }: Ta
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tasks</CardTitle>
-        <CardDescription>
-          {isAdmin ? 'Manage all tasks and assignments' : 'Your task history and current assignments'}
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Tasks</CardTitle>
+            <CardDescription>
+              {isAdmin ? 'Manage all tasks and assignments' : 'Your task history and current assignments'}
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={onRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">

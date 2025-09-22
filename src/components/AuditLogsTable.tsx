@@ -18,6 +18,7 @@ interface AuditLog {
 
 interface AuditLogsTableProps {
   auditLogs: AuditLog[];
+  onRefresh: () => void;
 }
 
 const getActionColor = (action: string) => {
@@ -33,7 +34,7 @@ const getActionColor = (action: string) => {
   }
 };
 
-export const AuditLogsTable = ({ auditLogs }: AuditLogsTableProps) => {
+export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) => {
   return (
     <Card>
       <CardHeader>

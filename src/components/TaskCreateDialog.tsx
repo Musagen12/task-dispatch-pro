@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createTask, getWorkers } from '@/lib/api';
+import { createTask, getWorkers, getTasks } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface TaskCreateDialogProps {
@@ -40,8 +40,18 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
   const loadWorkers = async () => {
     try {
       setIsLoadingWorkers(true);
-      const workersData = await getWorkers();
-      setWorkers(workersData.filter(worker => worker.status === 'active'));
+      const [workersData, tasksData] = await Promise.all([
+        getWorkers(),
+        getTasks()
+      ]);
+      
+      // Get workers who are active and don't have an active task
+      const activeWorkers = workersData.filter(worker => worker.status === 'active');
+      const activeTasks = tasksData.filter(task => task.status === 'pending' || task.status === 'in_progress');
+      const busyWorkerUsernames = new Set(activeTasks.map(task => task.assigned_to));
+      
+      const availableWorkers = activeWorkers.filter(worker => !busyWorkerUsernames.has(worker.username));
+      setWorkers(availableWorkers);
     } catch (error) {
       toast({
         variant: "destructive",

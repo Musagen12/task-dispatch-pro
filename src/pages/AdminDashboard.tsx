@@ -86,6 +86,57 @@ const AdminDashboard = () => {
     }
   };
 
+  const loadTasks = async () => {
+    try {
+      const tasksData = await getTasks();
+      setTasks(tasksData);
+      toast({
+        title: "Success",
+        description: "Tasks refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh tasks",
+      });
+    }
+  };
+
+  const loadWorkers = async () => {
+    try {
+      const workersData = await getWorkers();
+      setWorkers(workersData);
+      toast({
+        title: "Success",
+        description: "Workers refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh workers",
+      });
+    }
+  };
+
+  const loadAuditLogs = async () => {
+    try {
+      const auditData = await getAuditLogs();
+      setAuditLogs(auditData);
+      toast({
+        title: "Success",
+        description: "Audit logs refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh audit logs",
+      });
+    }
+  };
+
   const loadComplaints = async () => {
     try {
       const complaintsData = await getAdminComplaints();
@@ -240,6 +291,7 @@ const AdminDashboard = () => {
                 await removeWorker(username);
                 await loadData();
               }}
+              onRefresh={loadWorkers}
             />
           </TabsContent>
 
@@ -247,6 +299,7 @@ const AdminDashboard = () => {
             <TasksTable 
               tasks={tasks} 
               onStatusUpdate={() => {}} // Admins cannot update task status - only workers can
+              onRefresh={loadTasks}
               isAdmin={true}
             />
           </TabsContent>
@@ -261,7 +314,10 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="audit">
-            <AuditLogsTable auditLogs={auditLogs} />
+            <AuditLogsTable 
+              auditLogs={auditLogs}
+              onRefresh={loadAuditLogs}
+            />
           </TabsContent>
         </Tabs>
       </div>
