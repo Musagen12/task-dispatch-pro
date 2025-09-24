@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { authStorage, logout } from '@/lib/auth';
-import { getWorkerTasks, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint, getWorkerComplaintCount } from '@/lib/api';
+import { getWorkerTasks, acknowledgeTask, uploadTaskEvidence, submitWorkerComplaint, getWorkerComplaintCount, getWorkerComplaints } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { LogOut, Camera, AlertTriangle, ClipboardList, CheckCircle, User, MessageSquare } from 'lucide-react';
 import { ActiveTaskCard } from '@/components/ActiveTaskCard';

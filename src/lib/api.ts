@@ -166,14 +166,16 @@ export const updateWorkerPassword = (password: string) =>
 export const submitWorkerComplaint = (description: string) => 
   apiRequest(`/worker/complaints?description=${encodeURIComponent(description)}`, { method: 'POST' });
 
+export const getWorkerComplaints = (): Promise<any[]> => apiRequest('/worker/complaints');
+
 export const getWorkerComplaintCount = async (): Promise<number> => {
-  const user = authStorage.getUser();
-  if (!user) return 0;
-  
-  const complaints = await apiRequest<any[]>('/complaints/');
-  return complaints.filter(complaint => 
-    complaint.worker_id === user.id && complaint.status === 'pending'
-  ).length;
+  try {
+    const complaints = await getWorkerComplaints();
+    return complaints.length;
+  } catch (error) {
+    console.error('Failed to get worker complaint count:', error);
+    return 0;
+  }
 };
 
 // Public Complaints API
