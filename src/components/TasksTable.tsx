@@ -8,6 +8,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Eye, Camera, RefreshCw, FileImage, Download } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 
+interface Evidence {
+  id: string;
+  file_url: string;
+  uploaded_at: string;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -17,8 +23,7 @@ interface Task {
   created_at: string;
   worker_name?: string;
   photo_url?: string;
-  evidence_count?: number;
-  evidence_urls?: string[];
+  evidence: Evidence[];
 }
 
 interface TasksTableProps {
@@ -31,6 +36,12 @@ interface TasksTableProps {
 
 export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, isAdmin }: TasksTableProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const getFullImageUrl = (filePath: string) => {
+    return `${API_BASE_URL}/${filePath}`;
+  };
 
   const statusOptions = [
     { value: 'assigned', label: 'Assigned' },
@@ -88,31 +99,29 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                     )}
                    <TableCell>
                      <div className="flex items-center gap-2">
-                       {task.evidence_count && task.evidence_count > 0 ? (
+                       {task.evidence && task.evidence.length > 0 ? (
                          <>
                            <Badge variant="secondary" className="text-xs">
                              <FileImage className="h-3 w-3 mr-1" />
-                             {task.evidence_count}
+                             {task.evidence.length}
                            </Badge>
-                           {task.evidence_urls && task.evidence_urls.length > 0 && (
-                             <Button 
-                               variant="ghost" 
-                               size="sm"
-                               onClick={() => {
-                                 task.evidence_urls?.forEach((url, index) => {
-                                   const link = document.createElement('a');
-                                   link.href = url;
-                                   link.download = `evidence-${task.id}-${index + 1}`;
-                                   link.target = '_blank';
-                                   document.body.appendChild(link);
-                                   link.click();
-                                   document.body.removeChild(link);
-                                 });
-                               }}
-                             >
-                               <Download className="h-3 w-3" />
-                             </Button>
-                           )}
+                           <Button 
+                             variant="ghost" 
+                             size="sm"
+                             onClick={() => {
+                               task.evidence.forEach((evidence, index) => {
+                                 const link = document.createElement('a');
+                                 link.href = getFullImageUrl(evidence.file_url);
+                                 link.download = `evidence-${task.id}-${index + 1}`;
+                                 link.target = '_blank';
+                                 document.body.appendChild(link);
+                                 link.click();
+                                 document.body.removeChild(link);
+                               });
+                             }}
+                           >
+                             <Download className="h-3 w-3" />
+                           </Button>
                          </>
                        ) : (
                          <span className="text-muted-foreground text-xs">No evidence</span>
@@ -163,18 +172,22 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                                  />
                                </div>
                              )}
-                             {task.evidence_urls && task.evidence_urls.length > 0 && (
+                             {task.evidence && task.evidence.length > 0 && (
                                <div>
-                                 <h4 className="font-medium mb-2">Evidence ({task.evidence_count || task.evidence_urls.length})</h4>
+                                 <h4 className="font-medium mb-2">Evidence ({task.evidence.length})</h4>
                                  <div className="grid grid-cols-2 gap-2">
-                                   {task.evidence_urls.map((url, index) => (
-                                     <img 
-                                       key={index}
-                                       src={url} 
-                                       alt={`Evidence ${index + 1}`} 
-                                       className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
-                                       onClick={() => window.open(url, '_blank')}
-                                     />
+                                   {task.evidence.map((evidence, index) => (
+                                     <div key={evidence.id} className="relative group">
+                                       <img 
+                                         src={getFullImageUrl(evidence.file_url)} 
+                                         alt={`Evidence ${index + 1}`} 
+                                         className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
+                                         onClick={() => window.open(getFullImageUrl(evidence.file_url), '_blank')}
+                                       />
+                                       <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                         {formatDateTime(evidence.uploaded_at)}
+                                       </div>
+                                     </div>
                                    ))}
                                  </div>
                                </div>

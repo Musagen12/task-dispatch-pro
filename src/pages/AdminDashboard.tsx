@@ -15,6 +15,12 @@ import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { AuditLogsTable } from '@/components/AuditLogsTable';
 import { WorkersTable } from '@/components/WorkersTable';
 
+interface Evidence {
+  id: string;
+  file_url: string;
+  uploaded_at: string;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -24,6 +30,7 @@ interface Task {
   created_at: string;
   worker_name?: string;
   photo_url?: string;
+  evidence: Evidence[];
 }
 
 interface Complaint {

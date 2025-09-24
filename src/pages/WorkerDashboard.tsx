@@ -13,6 +13,12 @@ import { ComplaintCreateDialog } from '@/components/ComplaintCreateDialog';
 import { WorkerProfileCard } from '@/components/WorkerProfileCard';
 import { WorkerComplaintForm } from '@/components/WorkerComplaintForm';
 
+interface Evidence {
+  id: string;
+  file_url: string;
+  uploaded_at: string;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -21,6 +27,7 @@ interface Task {
   assigned_to: string;
   created_at: string;
   photo_url?: string;
+  evidence: Evidence[];
 }
 
 interface Complaint {
