@@ -42,7 +42,7 @@ interface Complaint {
 
 const WorkerDashboard = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [pendingComplaintsCount, setPendingComplaintsCount] = useState(0);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [isComplaintDialogOpen, setIsComplaintDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,16 +54,16 @@ const WorkerDashboard = () => {
 
   const loadData = async () => {
     try {
-      const [tasksData, complaintsCount] = await Promise.all([
+      const [tasksData, complaintsData] = await Promise.all([
         getWorkerTasks(),
-        getWorkerComplaintCount()
+        getWorkerComplaints()
       ]);
       
       // All tasks from worker endpoint are already filtered by backend
       const workerTasks = tasksData;
       
       setTasks(workerTasks);
-      setPendingComplaintsCount(complaintsCount);
+      setComplaints(complaintsData);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -126,6 +126,23 @@ const WorkerDashboard = () => {
 
   const activeTask = tasks.find(task => task.status === 'pending' || task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
+  
+  const loadComplaints = async () => {
+    try {
+      const complaintsData = await getWorkerComplaints();
+      setComplaints(complaintsData);
+      toast({
+        title: "Success",
+        description: "Complaints refreshed",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to refresh complaints",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -188,7 +205,10 @@ const WorkerDashboard = () => {
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-info">{pendingComplaintsCount}</div>
+              <div className="text-2xl font-bold text-info">{complaints.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {complaints.filter(c => c.status === 'new').length} pending
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -210,7 +230,8 @@ const WorkerDashboard = () => {
           <div className="flex items-center justify-between">
             <TabsList>
               <TabsTrigger value="tasks">My Tasks</TabsTrigger>
-              <TabsTrigger value="complaints">Submit Complaint</TabsTrigger>
+              <TabsTrigger value="my-complaints">My Complaints</TabsTrigger>
+              <TabsTrigger value="submit-complaint">Submit Complaint</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
             
@@ -229,8 +250,16 @@ const WorkerDashboard = () => {
             />
           </TabsContent>
 
+          <TabsContent value="my-complaints">
+            <ComplaintsTable 
+              complaints={complaints}
+              onStatusUpdate={() => {}} // Workers cannot update complaint status
+              onRefresh={loadComplaints}
+              isAdmin={false}
+            />
+          </TabsContent>
 
-          <TabsContent value="complaints">
+          <TabsContent value="submit-complaint">
             <WorkerComplaintForm onComplaintSubmitted={loadData} />
           </TabsContent>
 
