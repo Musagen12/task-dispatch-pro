@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, RefreshCw } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
+import { LogFilters, LogFilterValues } from './LogFilters';
+import { subHours, subDays, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 
 interface AuditLog {
   id: string;
@@ -35,18 +38,96 @@ const getActionColor = (action: string) => {
 };
 
 export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) => {
+  const [filters, setFilters] = useState<LogFilterValues>({
+    type: 'all',
+    time: 'today',
+  });
+
+  const handleFilterChange = (newFilters: LogFilterValues) => {
+    setFilters(newFilters);
+  };
+
+  const filterByEventType = (log: AuditLog) => {
+    if (filters.type === 'all') return true;
+    
+    const action = log.action.toLowerCase();
+    const tableName = log.table_name?.toLowerCase() || '';
+    
+    switch (filters.type) {
+      case 'login_logout':
+        return action.includes('login') || action.includes('logout');
+      case 'profile_views':
+        return action.includes('view') && tableName.includes('profile');
+      case 'task_views':
+        return action.includes('view') && tableName.includes('task');
+      case 'complaints':
+        return tableName.includes('complaint');
+      case 'workers_list':
+        return tableName.includes('worker');
+      case 'errors_security':
+        return action.includes('error') || action.includes('security');
+      default:
+        return true;
+    }
+  };
+
+  const filterByTimeRange = (log: AuditLog) => {
+    const logDate = new Date(log.created_at);
+    const now = new Date();
+
+    switch (filters.time) {
+      case 'last_hour':
+        return logDate >= subHours(now, 1);
+      case 'today':
+        return isWithinInterval(logDate, {
+          start: startOfDay(now),
+          end: endOfDay(now),
+        });
+      case 'last_7_days':
+        return logDate >= subDays(now, 7);
+      case 'last_30_days':
+        return logDate >= subDays(now, 30);
+      case 'custom':
+        if (filters.customDateRange) {
+          return isWithinInterval(logDate, {
+            start: startOfDay(filters.customDateRange.from),
+            end: endOfDay(filters.customDateRange.to),
+          });
+        }
+        return true;
+      default:
+        return true;
+    }
+  };
+
+  // Apply filters and sort
+  const filteredLogs = auditLogs
+    .filter(filterByEventType)
+    .filter(filterByTimeRange);
+
   // Sort logs by most recent first
-  const sortedLogs = [...auditLogs].sort((a, b) => 
+  const sortedLogs = [...filteredLogs].sort((a, b) =>
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Audit Logs</CardTitle>
-        <CardDescription>
-          System activity and change history
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Audit Logs</CardTitle>
+            <CardDescription>
+              System activity and change history
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <LogFilters onFilterChange={handleFilterChange} />
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
