@@ -35,6 +35,11 @@ const getActionColor = (action: string) => {
 };
 
 export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) => {
+  // Sort logs by most recent first
+  const sortedLogs = [...auditLogs].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -56,7 +61,7 @@ export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) =>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {auditLogs.map((log) => (
+              {sortedLogs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell>
                     <Badge className={getActionColor(log.action)}>
@@ -126,7 +131,7 @@ export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) =>
             </TableBody>
           </Table>
           
-          {auditLogs.length === 0 && (
+          {sortedLogs.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No audit logs found
             </div>

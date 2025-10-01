@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,11 +28,22 @@ interface ComplaintsTableProps {
 }
 
 export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin }: ComplaintsTableProps) => {
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
   const statusOptions = [
     { value: 'new', label: 'New' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'resolved', label: 'Resolved' },
   ];
+
+  // Filter and sort complaints
+  const filteredComplaints = complaints.filter(complaint => 
+    statusFilter === 'all' || complaint.status === statusFilter
+  );
+
+  const sortedComplaints = [...filteredComplaints].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return (
     <Card>
@@ -43,12 +55,27 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
               {isAdmin ? 'Manage all worker complaints' : 'Your submitted complaints and their status'}
             </CardDescription>
           </div>
-          {onRefresh && (
-            <Button variant="outline" size="sm" onClick={onRefresh}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {onRefresh && (
+              <Button variant="outline" size="sm" onClick={onRefresh}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -64,7 +91,7 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
               </TableRow>
             </TableHeader>
             <TableBody>
-              {complaints.map((complaint) => (
+              {sortedComplaints.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="max-w-xs truncate">{complaint.description}</TableCell>
                   <TableCell>
@@ -173,7 +200,7 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
             </TableBody>
           </Table>
           
-          {complaints.length === 0 && (
+          {sortedComplaints.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No complaints found
             </div>

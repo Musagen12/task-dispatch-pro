@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Eye, Camera, RefreshCw, FileImage, Download } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, Camera, RefreshCw, FileImage } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 
 interface Evidence {
@@ -36,6 +37,8 @@ interface TasksTableProps {
 
 export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, isAdmin }: TasksTableProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -50,6 +53,15 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
     { value: 'completed', label: 'Completed' },
   ];
 
+  // Filter and sort tasks
+  const filteredTasks = tasks.filter(task => 
+    statusFilter === 'all' || task.status === statusFilter
+  );
+
+  const sortedTasks = [...filteredTasks].sort((a, b) => 
+    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -60,10 +72,25 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               {isAdmin ? 'Manage all tasks and assignments' : 'Your task history and current assignments'}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={onRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -81,7 +108,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tasks.map((task) => (
+              {sortedTasks.map((task) => (
                 <TableRow key={task.id}>
                   <TableCell className="font-medium">{task.title}</TableCell>
                   <TableCell className="max-w-xs truncate">{task.description}</TableCell>
@@ -100,29 +127,14 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                    <TableCell>
                      <div className="flex items-center gap-2">
                        {task.evidence && task.evidence.length > 0 ? (
-                         <>
-                           <Badge variant="secondary" className="text-xs">
-                             <FileImage className="h-3 w-3 mr-1" />
-                             {task.evidence.length}
-                           </Badge>
-                           <Button 
-                             variant="ghost" 
-                             size="sm"
-                             onClick={() => {
-                               task.evidence.forEach((evidence, index) => {
-                                 const link = document.createElement('a');
-                                 link.href = getFullImageUrl(evidence.file_url);
-                                 link.download = `evidence-${task.id}-${index + 1}`;
-                                 link.target = '_blank';
-                                 document.body.appendChild(link);
-                                 link.click();
-                                 document.body.removeChild(link);
-                               });
-                             }}
-                           >
-                             <Download className="h-3 w-3" />
-                           </Button>
-                         </>
+                         <Badge 
+                           variant="secondary" 
+                           className="text-xs cursor-pointer hover:bg-secondary/80"
+                           onClick={() => setSelectedImage(getFullImageUrl(task.evidence[0].file_url))}
+                         >
+                           <FileImage className="h-3 w-3 mr-1" />
+                           {task.evidence.length} image{task.evidence.length > 1 ? 's' : ''}
+                         </Badge>
                        ) : (
                          <span className="text-muted-foreground text-xs">No evidence</span>
                        )}
@@ -182,7 +194,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                                          src={getFullImageUrl(evidence.file_url)} 
                                          alt={`Evidence ${index + 1}`} 
                                          className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
-                                         onClick={() => window.open(getFullImageUrl(evidence.file_url), '_blank')}
+                                         onClick={() => setSelectedImage(getFullImageUrl(evidence.file_url))}
                                        />
                                        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                          {formatDateTime(evidence.uploaded_at)}
@@ -209,13 +221,31 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
             </TableBody>
           </Table>
           
-          {tasks.length === 0 && (
+          {sortedTasks.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No tasks found
             </div>
           )}
         </div>
       </CardContent>
+
+      {/* Image Viewer Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Evidence Image</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center">
+            {selectedImage && (
+              <img 
+                src={selectedImage} 
+                alt="Evidence" 
+                className="max-w-full max-h-[70vh] object-contain rounded-md"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
