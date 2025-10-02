@@ -43,7 +43,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   const getFullImageUrl = (filePath: string) => {
-    return `${API_BASE_URL}/${filePath}`;
+    // Remove any leading slash and construct the full URL
+    const cleanPath = filePath.startsWith('/') ? filePath.substring(1) : filePath;
+    return `${API_BASE_URL}/${cleanPath}`;
   };
 
   const statusOptions = [
