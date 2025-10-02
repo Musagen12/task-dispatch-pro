@@ -31,8 +31,7 @@ export const ComplaintsTable = ({ complaints, onStatusUpdate, onRefresh, isAdmin
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const statusOptions = [
-    { value: 'new', label: 'New' },
-    { value: 'in_progress', label: 'In Progress' },
+    { value: 'pending', label: 'Pending' },
     { value: 'resolved', label: 'Resolved' },
   ];
 

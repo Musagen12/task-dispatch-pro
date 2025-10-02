@@ -47,8 +47,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   };
 
   const statusOptions = [
-    { value: 'assigned', label: 'Assigned' },
-    { value: 'acknowledged', label: 'Acknowledged' },
+    { value: 'pending', label: 'Pending' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
   ];

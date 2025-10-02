@@ -56,16 +56,14 @@ export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) =>
     switch (filters.type) {
       case 'login_logout':
         return action.includes('login') || action.includes('logout');
-      case 'profile_views':
-        return action.includes('view') && tableName.includes('profile');
-      case 'task_views':
-        return action.includes('view') && tableName.includes('task');
-      case 'complaints':
-        return tableName.includes('complaint');
-      case 'workers_list':
-        return tableName.includes('worker');
-      case 'errors_security':
-        return action.includes('error') || action.includes('security');
+      case 'task_logs':
+        return tableName.includes('task') || action.includes('task');
+      case 'worker_logs':
+        return tableName.includes('worker') || action.includes('worker');
+      case 'profile_logs':
+        return tableName.includes('profile') || action.includes('profile');
+      case 'complaint_logs':
+        return tableName.includes('complaint') || action.includes('complaint');
       default:
         return true;
     }

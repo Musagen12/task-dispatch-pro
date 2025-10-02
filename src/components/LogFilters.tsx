@@ -33,11 +33,10 @@ export const LogFilters = ({ onFilterChange }: LogFiltersProps) => {
   const eventTypeOptions = [
     { value: 'all', label: 'All' },
     { value: 'login_logout', label: 'Login/Logout' },
-    { value: 'profile_views', label: 'Profile Views' },
-    { value: 'task_views', label: 'Task Views' },
-    { value: 'complaints', label: 'Complaints' },
-    { value: 'workers_list', label: 'Workers List' },
-    { value: 'errors_security', label: 'Errors/Security' },
+    { value: 'task_logs', label: 'Task Logs' },
+    { value: 'worker_logs', label: 'Worker Logs' },
+    { value: 'profile_logs', label: 'Profile Logs' },
+    { value: 'complaint_logs', label: 'Complaint Logs' },
   ];
 
   const timeRangeOptions = [
