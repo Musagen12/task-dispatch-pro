@@ -126,6 +126,7 @@ const WorkerDashboard = () => {
 
   const activeTask = tasks.find(task => task.status === 'pending' || task.status === 'in_progress');
   const completedTasks = tasks.filter(task => task.status === 'completed');
+  const pendingComplaintsCount = complaints.filter(c => ['pending', 'new', 'open'].includes((c.status || '').toLowerCase())).length;
   
   const loadComplaints = async () => {
     try {
@@ -207,7 +208,7 @@ const WorkerDashboard = () => {
             <CardContent>
               <div className="text-2xl font-bold text-info">{complaints.length}</div>
               <p className="text-xs text-muted-foreground">
-                {complaints.filter(c => c.status === 'new').length} pending
+                {pendingComplaintsCount} pending
               </p>
             </CardContent>
           </Card>

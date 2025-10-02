@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Eye, Camera, RefreshCw, FileImage } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
+import { ImageWithAuth } from '@/components/ImageWithAuth';
 
 interface Evidence {
   id: string;
@@ -131,7 +132,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                          <Badge 
                            variant="secondary" 
                            className="text-xs cursor-pointer hover:bg-secondary/80"
-                           onClick={() => setSelectedImage(getFullImageUrl(task.evidence[0].file_url))}
+                           onClick={() => setSelectedImage(task.evidence[0].file_url)}
                          >
                            <FileImage className="h-3 w-3 mr-1" />
                            {task.evidence.length} image{task.evidence.length > 1 ? 's' : ''}
@@ -178,11 +179,11 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                              {task.photo_url && (
                                <div>
                                  <h4 className="font-medium mb-2">Completion Photo</h4>
-                                 <img 
-                                   src={task.photo_url} 
-                                   alt="Task completion" 
-                                   className="max-w-full h-64 object-cover rounded-md border"
-                                 />
+                                  <ImageWithAuth
+                                    srcPath={task.photo_url || ''}
+                                    alt="Task completion"
+                                    className="max-w-full h-64 object-cover rounded-md border"
+                                  />
                                </div>
                              )}
                              {task.evidence && task.evidence.length > 0 && (
@@ -191,11 +192,11 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                                  <div className="grid grid-cols-2 gap-2">
                                    {task.evidence.map((evidence, index) => (
                                      <div key={evidence.id} className="relative group">
-                                       <img 
-                                         src={getFullImageUrl(evidence.file_url)} 
-                                         alt={`Evidence ${index + 1}`} 
+                                       <ImageWithAuth
+                                         srcPath={evidence.file_url}
+                                         alt={`Evidence ${index + 1}`}
                                          className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
-                                         onClick={() => setSelectedImage(getFullImageUrl(evidence.file_url))}
+                                         onClick={() => setSelectedImage(evidence.file_url)}
                                        />
                                        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                          {formatDateTime(evidence.uploaded_at)}
@@ -238,9 +239,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
           </DialogHeader>
           <div className="flex items-center justify-center">
             {selectedImage && (
-              <img 
-                src={selectedImage} 
-                alt="Evidence" 
+              <ImageWithAuth
+                srcPath={selectedImage || ''}
+                alt="Evidence"
                 className="max-w-full max-h-[70vh] object-contain rounded-md"
               />
             )}
