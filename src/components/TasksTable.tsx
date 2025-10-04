@@ -286,16 +286,26 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
 
       {/* Image Viewer Dialog */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
+        <DialogContent className="max-w-7xl w-[95vw] h-[95vh] p-0">
+          <DialogHeader className="p-6 pb-2">
             <DialogTitle>Evidence Image</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center h-[calc(95vh-80px)] p-6 pt-2 overflow-auto">
             {selectedImage && (
               <ImageWithAuth
                 srcPath={selectedImage || ''}
                 alt="Evidence"
-                className="max-w-full max-h-[70vh] object-contain rounded-md"
+                className="w-full h-full object-contain cursor-zoom-in hover:scale-105 transition-transform"
+                onClick={(e) => {
+                  const img = e.currentTarget;
+                  if (img.style.transform === 'scale(2)') {
+                    img.style.transform = 'scale(1)';
+                    img.style.cursor = 'zoom-in';
+                  } else {
+                    img.style.transform = 'scale(2)';
+                    img.style.cursor = 'zoom-out';
+                  }
+                }}
               />
             )}
           </div>

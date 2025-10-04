@@ -111,7 +111,7 @@ export const WorkerManagementDialog = ({ open, onOpenChange, onWorkerAdded }: Wo
             <Input
               id="phone"
               type="tel"
-              placeholder="Enter phone number (e.g., +1234567890)"
+              placeholder="Enter phone number (e.g., +254720368136)"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
