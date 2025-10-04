@@ -15,12 +15,13 @@ interface WorkerManagementDialogProps {
 export const WorkerManagementDialog = ({ open, onOpenChange, onWorkerAdded }: WorkerManagementDialogProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
+    if (!username || !password || !phone) {
       toast({
         variant: "destructive",
         title: "Validation Error",
@@ -31,19 +32,41 @@ export const WorkerManagementDialog = ({ open, onOpenChange, onWorkerAdded }: Wo
 
     setIsLoading(true);
     try {
-      await addWorker(username, password);
+      await addWorker(username, password, phone);
       
       toast({
         title: "Success",
-        description: "Worker added successfully",
+        description: "Worker added and phone verification sent successfully",
       });
       
       setUsername('');
       setPassword('');
+      setPhone('');
       onOpenChange(false);
       onWorkerAdded();
-    } catch (error) {
-      // Error already handled by API layer
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Failed to add worker';
+      
+      // Provide specific error messages for phone verification issues
+      if (errorMessage.includes('phone') || errorMessage.includes('verification') || errorMessage.includes('SMS')) {
+        toast({
+          variant: "destructive",
+          title: "Phone Verification Failed",
+          description: "Unable to send verification message to the provided phone number. Please verify the number is correct and has SMS capability.",
+        });
+      } else if (errorMessage.includes('duplicate') || errorMessage.includes('exists')) {
+        toast({
+          variant: "destructive",
+          title: "Worker Already Exists",
+          description: "A worker with this username or phone number already exists.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error Adding Worker",
+          description: errorMessage,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -79,6 +102,18 @@ export const WorkerManagementDialog = ({ open, onOpenChange, onWorkerAdded }: Wo
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              type="tel"
+              placeholder="Enter phone number (e.g., +1234567890)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               required
             />
           </div>

@@ -4,11 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Camera, RefreshCw, FileImage } from 'lucide-react';
+import { Eye, Camera, RefreshCw, FileImage, RotateCcw } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { resetTaskStatus } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
 
 interface Evidence {
   id: string;
@@ -40,6 +44,10 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetReason, setResetReason] = useState('');
+  const [resettingTaskId, setResettingTaskId] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -54,6 +62,38 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
   ];
+
+  const handleResetTask = async () => {
+    if (!resettingTaskId || !resetReason.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please provide a reason for resetting the task",
+      });
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await resetTaskStatus(resettingTaskId, resetReason);
+      toast({
+        title: "Task Reset",
+        description: "Task status has been reset and worker has been notified",
+      });
+      setResetDialogOpen(false);
+      setResetReason('');
+      setResettingTaskId(null);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: error?.message || "Failed to reset task status",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   // Filter and sort tasks
   const filteredTasks = tasks.filter(task => 
@@ -145,79 +185,92 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                    <TableCell>
                      {formatDateTime(task.created_at)}
                    </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => setSelectedTask(task)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{task.title}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <h4 className="font-medium">Description</h4>
-                              <p className="text-sm text-muted-foreground">{task.description}</p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div>
-                                <h4 className="font-medium">Status</h4>
-                                <StatusBadge status={task.status} />
-                              </div>
-                              <div>
-                                <h4 className="font-medium">Created</h4>
-                                <p className="text-sm">{formatDateTime(task.created_at)}</p>
-                              </div>
-                            </div>
-                             {task.photo_url && (
+                   <TableCell>
+                     <div className="flex items-center gap-2">
+                       <Dialog>
+                         <DialogTrigger asChild>
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => setSelectedTask(task)}
+                           >
+                             <Eye className="h-4 w-4" />
+                           </Button>
+                         </DialogTrigger>
+                         <DialogContent className="max-w-2xl">
+                           <DialogHeader>
+                             <DialogTitle>{task.title}</DialogTitle>
+                           </DialogHeader>
+                           <div className="space-y-4">
+                             <div>
+                               <h4 className="font-medium">Description</h4>
+                               <p className="text-sm text-muted-foreground">{task.description}</p>
+                             </div>
+                             <div className="flex items-center gap-4">
                                <div>
-                                 <h4 className="font-medium mb-2">Completion Photo</h4>
-                                  <ImageWithAuth
-                                    srcPath={task.photo_url || ''}
-                                    alt="Task completion"
-                                    className="max-w-full h-64 object-cover rounded-md border"
-                                  />
+                                 <h4 className="font-medium">Status</h4>
+                                 <StatusBadge status={task.status} />
                                </div>
-                             )}
-                             {task.evidence && task.evidence.length > 0 && (
                                <div>
-                                 <h4 className="font-medium mb-2">Evidence ({task.evidence.length})</h4>
-                                 <div className="grid grid-cols-2 gap-2">
-                                   {task.evidence.map((evidence, index) => (
-                                     <div key={evidence.id} className="relative group">
-                                       <ImageWithAuth
-                                         srcPath={evidence.file_url}
-                                         alt={`Evidence ${index + 1}`}
-                                         className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
-                                         onClick={() => setSelectedImage(evidence.file_url)}
-                                       />
-                                       <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                         {formatDateTime(evidence.uploaded_at)}
-                                       </div>
-                                     </div>
-                                   ))}
-                                 </div>
+                                 <h4 className="font-medium">Created</h4>
+                                 <p className="text-sm">{formatDateTime(task.created_at)}</p>
                                </div>
-                             )}
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                      
-                      {task.photo_url && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Camera className="h-3 w-3 mr-1" />
-                          Photo
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
+                             </div>
+                              {task.photo_url && (
+                                <div>
+                                  <h4 className="font-medium mb-2">Completion Photo</h4>
+                                   <ImageWithAuth
+                                     srcPath={task.photo_url || ''}
+                                     alt="Task completion"
+                                     className="max-w-full h-64 object-cover rounded-md border"
+                                   />
+                                </div>
+                              )}
+                              {task.evidence && task.evidence.length > 0 && (
+                                <div>
+                                  <h4 className="font-medium mb-2">Evidence ({task.evidence.length})</h4>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {task.evidence.map((evidence, index) => (
+                                      <div key={evidence.id} className="relative group">
+                                        <ImageWithAuth
+                                          srcPath={evidence.file_url}
+                                          alt={`Evidence ${index + 1}`}
+                                          className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
+                                          onClick={() => setSelectedImage(evidence.file_url)}
+                                        />
+                                        <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                          {formatDateTime(evidence.uploaded_at)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                           </div>
+                         </DialogContent>
+                       </Dialog>
+                       
+                       {isAdmin && task.status === 'completed' && (
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => {
+                             setResettingTaskId(task.id);
+                             setResetDialogOpen(true);
+                           }}
+                         >
+                           <RotateCcw className="h-4 w-4" />
+                         </Button>
+                       )}
+                       
+                       {task.photo_url && (
+                         <Badge variant="secondary" className="text-xs">
+                           <Camera className="h-3 w-3 mr-1" />
+                           Photo
+                         </Badge>
+                       )}
+                     </div>
+                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -246,6 +299,48 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               />
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Task Dialog */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset Task Status</DialogTitle>
+            <DialogDescription>
+              Provide a reason for resetting this task. The worker will be notified with your message.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="resetReason">Reason for Reset</Label>
+              <Textarea
+                id="resetReason"
+                placeholder="e.g., Work quality doesn't meet standards, please redo..."
+                value={resetReason}
+                onChange={(e) => setResetReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResetDialogOpen(false);
+                setResetReason('');
+                setResettingTaskId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleResetTask}
+              disabled={isResetting || !resetReason.trim()}
+            >
+              {isResetting ? 'Resetting...' : 'Reset Task'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </Card>

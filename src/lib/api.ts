@@ -120,12 +120,12 @@ export const refreshToken = async (): Promise<{access_token: string}> => {
 
 // Admin APIs
 export const getWorkers = (): Promise<any[]> => apiRequest('/admin/workers/');
-export const addWorker = (username: string, password: string) => 
+export const addWorker = (username: string, password: string, phone: string) => 
   apiRequest('/admin/workers/', { 
     method: 'POST', 
     body: JSON.stringify({}),
     headers: { ...getAuthHeader(), 'Content-Type': 'application/json' }
-  }, `?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`);
+  }, `?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&phone=${encodeURIComponent(phone)}`);
 export const removeWorker = (username: string) => apiRequest(`/admin/workers/${username}`, { method: 'DELETE' });
 export const updateWorkerStatus = (username: string, status: string) => 
   apiRequest(`/admin/workers/${username}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
@@ -135,6 +135,8 @@ export const createTask = (task: {title: string, description: string, assigned_t
   apiRequest(`/admin/tasks/?title=${encodeURIComponent(task.title)}&description=${encodeURIComponent(task.description)}&assigned_to=${encodeURIComponent(task.assigned_to)}`, { method: 'POST' });
 export const updateTaskStatus = (taskId: string, status: string) => 
   apiRequest(`/admin/tasks/${taskId}?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
+export const resetTaskStatus = (taskId: string, reason: string) => 
+  apiRequest(`/admin/tasks/${taskId}/reset-task-status?reason=${encodeURIComponent(reason)}`, { method: 'POST' });
 export const deleteTask = (taskId: string) => apiRequest(`/admin/tasks/${taskId}`, { method: 'DELETE' });
 
 export const getAdminComplaints = (): Promise<any[]> => apiRequest('/admin/complaints/');
