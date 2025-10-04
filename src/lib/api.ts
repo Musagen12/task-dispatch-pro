@@ -121,9 +121,8 @@ export const refreshToken = async (): Promise<{access_token: string}> => {
 // Admin APIs
 export const getWorkers = (): Promise<any[]> => apiRequest('/admin/workers/');
 export const addWorker = (username: string, password: string, phone: string) => 
-  apiRequest('/admin/workers/', { 
-    method: 'POST', 
-    body: JSON.stringify({ username, password, phone }),
+  apiRequest(`/admin/workers/?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&phone_number=${encodeURIComponent(phone)}`, { 
+    method: 'POST',
   });
 export const removeWorker = (username: string) => apiRequest(`/admin/workers/${username}`, { method: 'DELETE' });
 export const updateWorkerStatus = (username: string, status: string) => 
