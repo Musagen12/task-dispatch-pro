@@ -123,9 +123,8 @@ export const getWorkers = (): Promise<any[]> => apiRequest('/admin/workers/');
 export const addWorker = (username: string, password: string, phone: string) => 
   apiRequest('/admin/workers/', { 
     method: 'POST', 
-    body: JSON.stringify({}),
-    headers: { ...getAuthHeader(), 'Content-Type': 'application/json' }
-  }, `?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&phone=${encodeURIComponent(phone)}`);
+    body: JSON.stringify({ username, password, phone }),
+  });
 export const removeWorker = (username: string) => apiRequest(`/admin/workers/${username}`, { method: 'DELETE' });
 export const updateWorkerStatus = (username: string, status: string) => 
   apiRequest(`/admin/workers/${username}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });

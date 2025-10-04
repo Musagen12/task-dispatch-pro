@@ -37,6 +37,7 @@ export const LogFilters = ({ onFilterChange }: LogFiltersProps) => {
     { value: 'worker_logs', label: 'Worker Logs' },
     { value: 'profile_logs', label: 'Profile Logs' },
     { value: 'complaint_logs', label: 'Complaint Logs' },
+    { value: 'SMS_NOTIFICATION_SENT', label: 'SMS Notification Sent' },
   ];
 
   const timeRangeOptions = [
