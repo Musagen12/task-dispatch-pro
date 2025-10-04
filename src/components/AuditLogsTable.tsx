@@ -64,6 +64,8 @@ export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) =>
         return tableName.includes('profile') || action.includes('profile');
       case 'complaint_logs':
         return tableName.includes('complaint') || action.includes('complaint');
+      case 'SMS_NOTIFICATION_SENT':
+        return action.includes('sms') || action === 'sms_notification_sent';
       default:
         return true;
     }
