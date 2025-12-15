@@ -129,8 +129,8 @@ export const updateWorkerStatus = (username: string, status: string) =>
   apiRequest(`/admin/workers/${username}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
 
 export const getTasks = (): Promise<any[]> => apiRequest('/admin/tasks/');
-export const createTask = (task: {title: string, description: string, assigned_to: string}) => 
-  apiRequest(`/admin/tasks/?title=${encodeURIComponent(task.title)}&description=${encodeURIComponent(task.description)}&assigned_to=${encodeURIComponent(task.assigned_to)}`, { method: 'POST' });
+export const createTask = (templateId: string, assignedTo: string) => 
+  apiRequest(`/admin/tasks/?template_id=${encodeURIComponent(templateId)}&assigned_to=${encodeURIComponent(assignedTo)}`, { method: 'POST' });
 export const updateTaskStatus = (taskId: string, status: string) => 
   apiRequest(`/admin/tasks/${taskId}?status=${encodeURIComponent(status)}`, { method: 'PATCH' });
 export const resetTaskStatus = (taskId: string, reason: string) => 
