@@ -87,11 +87,7 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
 
     setIsLoading(true);
     try {
-      await createTask({
-        title: template.title,
-        description: template.description,
-        assigned_to: assignedTo
-      });
+      await createTask(selectedTemplate, assignedTo);
       
       toast({
         title: "Success",
