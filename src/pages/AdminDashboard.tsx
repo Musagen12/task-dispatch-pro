@@ -7,9 +7,10 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage, logout } from '@/lib/auth';
 import { getTasks, getComplaints, getAdminComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText } from 'lucide-react';
+import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText, FileStack } from 'lucide-react';
 import { TaskCreateDialog } from '@/components/TaskCreateDialog';
 import { WorkerManagementDialog } from '@/components/WorkerManagementDialog';
+import { TaskTemplateManagementDialog } from '@/components/TaskTemplateManagementDialog';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { AuditLogsTable } from '@/components/AuditLogsTable';
@@ -61,6 +62,7 @@ const AdminDashboard = () => {
   const [workers, setWorkers] = useState<any[]>([]);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isWorkerDialogOpen, setIsWorkerDialogOpen] = useState(false);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const user = authStorage.getUser();
@@ -280,9 +282,13 @@ const AdminDashboard = () => {
                 <Users className="mr-2 h-4 w-4" />
                 Add Worker
               </Button>
+              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(true)}>
+                <FileStack className="mr-2 h-4 w-4" />
+                Manage Templates
+              </Button>
               <Button onClick={() => setIsTaskDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Create Task
+                Assign Task
               </Button>
             </div>
           </div>
@@ -339,6 +345,11 @@ const AdminDashboard = () => {
         open={isWorkerDialogOpen}
         onOpenChange={setIsWorkerDialogOpen}
         onWorkerAdded={loadData}
+      />
+
+      <TaskTemplateManagementDialog
+        open={isTemplateDialogOpen}
+        onOpenChange={setIsTemplateDialogOpen}
       />
     </div>
   );

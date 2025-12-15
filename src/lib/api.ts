@@ -137,6 +137,31 @@ export const resetTaskStatus = (taskId: string, reason: string) =>
   apiRequest(`/admin/tasks/${taskId}/reset-task-status?reason=${encodeURIComponent(reason)}`, { method: 'POST' });
 export const deleteTask = (taskId: string) => apiRequest(`/admin/tasks/${taskId}`, { method: 'DELETE' });
 
+// Task Templates API
+export interface TaskTemplate {
+  id: string;
+  title: string;
+  description: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const getTaskTemplates = (): Promise<TaskTemplate[]> => apiRequest('/task_template/task-templates/');
+export const createTaskTemplate = (template: {title: string, description: string}) => 
+  apiRequest('/task_template/task-templates/', { 
+    method: 'POST',
+    body: JSON.stringify(template)
+  });
+export const getTaskTemplate = (templateId: string): Promise<TaskTemplate> => 
+  apiRequest(`/task_template/task-templates/${templateId}`);
+export const updateTaskTemplate = (templateId: string, template: {title?: string, description?: string}) => 
+  apiRequest(`/task_template/task-templates/${templateId}`, { 
+    method: 'PATCH',
+    body: JSON.stringify(template)
+  });
+export const deleteTaskTemplate = (templateId: string) => 
+  apiRequest(`/task_template/task-templates/${templateId}`, { method: 'DELETE' });
+
 export const getAdminComplaints = (): Promise<any[]> => apiRequest('/admin/complaints/');
 export const updateComplaintStatus = (complaintId: string, status: string) => 
   apiRequest(`/admin/complaints/${complaintId}/status?status=${encodeURIComponent(status)}`, { method: 'PATCH' });

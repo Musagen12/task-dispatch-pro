@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createTask, getWorkers, getTasks } from '@/lib/api';
+import { createTask, getWorkers, getTasks, getTaskTemplates, TaskTemplate } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface TaskCreateDialogProps {
@@ -24,25 +22,26 @@ interface Worker {
 }
 
 export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCreateDialogProps) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingWorkers, setIsLoadingWorkers] = useState(true);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   useEffect(() => {
     if (open) {
-      loadWorkers();
+      loadData();
     }
   }, [open]);
 
-  const loadWorkers = async () => {
+  const loadData = async () => {
     try {
-      setIsLoadingWorkers(true);
-      const [workersData, tasksData] = await Promise.all([
+      setIsLoadingData(true);
+      const [workersData, tasksData, templatesData] = await Promise.all([
         getWorkers(),
-        getTasks()
+        getTasks(),
+        getTaskTemplates()
       ]);
       
       // Get workers who are active and don't have an active task
@@ -52,25 +51,36 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
       
       const availableWorkers = activeWorkers.filter(worker => !busyWorkerUsernames.has(worker.username));
       setWorkers(availableWorkers);
+      setTemplates(templatesData);
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to load workers",
+        description: "Failed to load data",
       });
     } finally {
-      setIsLoadingWorkers(false);
+      setIsLoadingData(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !description || !assignedTo) {
+    if (!selectedTemplate || !assignedTo) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Please fill in all fields",
+        description: "Please select a template and a worker",
+      });
+      return;
+    }
+
+    const template = templates.find(t => t.id === selectedTemplate);
+    if (!template) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Selected template not found",
       });
       return;
     }
@@ -78,8 +88,8 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
     setIsLoading(true);
     try {
       await createTask({
-        title,
-        description,
+        title: template.title,
+        description: template.description,
         assigned_to: assignedTo
       });
       
@@ -88,8 +98,7 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
         description: "Task created and assigned successfully",
       });
       
-      setTitle('');
-      setDescription('');
+      setSelectedTemplate('');
       setAssignedTo('');
       onOpenChange(false);
       onTaskCreated();
@@ -104,41 +113,39 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create New Task</DialogTitle>
+          <DialogTitle>Assign Task</DialogTitle>
           <DialogDescription>
-            Create and assign a new task to a worker
+            Select a task template and assign it to a worker
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">Task Title</Label>
-            <Input
-              id="title"
-              placeholder="Enter task title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Enter task description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              required
-            />
+            <Label htmlFor="template">Task Template</Label>
+            <Select value={selectedTemplate} onValueChange={setSelectedTemplate} disabled={isLoadingData}>
+              <SelectTrigger>
+                <SelectValue placeholder={isLoadingData ? "Loading templates..." : "Select a template"} />
+              </SelectTrigger>
+              <SelectContent>
+                {templates.map((template) => (
+                  <SelectItem key={template.id} value={template.id}>
+                    {template.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedTemplate && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {templates.find(t => t.id === selectedTemplate)?.description}
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="worker">Assign to Worker</Label>
-            <Select value={assignedTo} onValueChange={setAssignedTo} disabled={isLoadingWorkers}>
+            <Select value={assignedTo} onValueChange={setAssignedTo} disabled={isLoadingData}>
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingWorkers ? "Loading workers..." : "Select a worker"} />
+                <SelectValue placeholder={isLoadingData ? "Loading workers..." : "Select a worker"} />
               </SelectTrigger>
               <SelectContent>
                 {workers.map((worker) => (
@@ -164,7 +171,7 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
               className="flex-1"
               disabled={isLoading}
             >
-              {isLoading ? 'Creating...' : 'Create Task'}
+              {isLoading ? 'Assigning...' : 'Assign Task'}
             </Button>
           </div>
         </form>
