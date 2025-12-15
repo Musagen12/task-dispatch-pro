@@ -55,7 +55,7 @@ export const AuditLogsTable = ({ auditLogs, onRefresh }: AuditLogsTableProps) =>
     
     switch (filters.type) {
       case 'login_logout':
-        return action.includes('login') || action.includes('logout');
+        return action === 'login' || action === 'logout' || action.includes('login') || action.includes('logout');
       case 'task_logs':
         return tableName.includes('task') || action.includes('task');
       case 'worker_logs':
