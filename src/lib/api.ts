@@ -137,24 +137,60 @@ export const resetTaskStatus = (taskId: string, reason: string) =>
   apiRequest(`/admin/tasks/${taskId}/reset-task-status?reason=${encodeURIComponent(reason)}`, { method: 'POST' });
 export const deleteTask = (taskId: string) => apiRequest(`/admin/tasks/${taskId}`, { method: 'DELETE' });
 
+// Buildings API
+export interface Building {
+  id: string;
+  name: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const getBuildings = (): Promise<Building[]> => apiRequest('/buildings/');
+export const createBuilding = (name: string) => 
+  apiRequest(`/buildings/?name=${encodeURIComponent(name)}`, { method: 'POST' });
+export const updateBuilding = (buildingId: string, name: string) => 
+  apiRequest(`/buildings/${buildingId}?name=${encodeURIComponent(name)}`, { method: 'PATCH' });
+export const deleteBuilding = (buildingId: string) => 
+  apiRequest(`/buildings/${buildingId}`, { method: 'DELETE' });
+
+// Facilities API
+export interface Facility {
+  id: string;
+  name: string;
+  building_id: string;
+  building_name?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const getFacilities = (): Promise<Facility[]> => apiRequest('/facilities/');
+export const createFacility = (name: string, buildingId: string) => 
+  apiRequest(`/facilities/?name=${encodeURIComponent(name)}&building_id=${encodeURIComponent(buildingId)}`, { method: 'POST' });
+export const updateFacility = (facilityId: string, name: string) => 
+  apiRequest(`/facilities/${facilityId}?name=${encodeURIComponent(name)}`, { method: 'PATCH' });
+export const deleteFacility = (facilityId: string) => 
+  apiRequest(`/facilities/${facilityId}`, { method: 'DELETE' });
+
 // Task Templates API
 export interface TaskTemplate {
   id: string;
   title: string;
   description: string;
+  facility_id?: string;
+  facility_name?: string;
   created_at?: string;
   updated_at?: string;
 }
 
 export const getTaskTemplates = (): Promise<TaskTemplate[]> => apiRequest('/task_template/task-templates/');
-export const createTaskTemplate = (template: {title: string, description: string}) => 
+export const createTaskTemplate = (template: {title: string, description: string, facility_id: string}) => 
   apiRequest('/task_template/task-templates/', { 
     method: 'POST',
     body: JSON.stringify(template)
   });
 export const getTaskTemplate = (templateId: string): Promise<TaskTemplate> => 
   apiRequest(`/task_template/task-templates/${templateId}`);
-export const updateTaskTemplate = (templateId: string, template: {title?: string, description?: string}) => 
+export const updateTaskTemplate = (templateId: string, template: {title?: string, description?: string, facility_id?: string}) => 
   apiRequest(`/task_template/task-templates/${templateId}`, { 
     method: 'PATCH',
     body: JSON.stringify(template)

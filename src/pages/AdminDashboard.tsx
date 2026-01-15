@@ -7,10 +7,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage, logout } from '@/lib/auth';
 import { getTasks, getComplaints, getAdminComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText, FileStack } from 'lucide-react';
+import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText, FileStack, Building2, Warehouse } from 'lucide-react';
 import { TaskCreateDialog } from '@/components/TaskCreateDialog';
 import { WorkerManagementDialog } from '@/components/WorkerManagementDialog';
 import { TaskTemplateManagementDialog } from '@/components/TaskTemplateManagementDialog';
+import { BuildingManagementDialog } from '@/components/BuildingManagementDialog';
+import { FacilityManagementDialog } from '@/components/FacilityManagementDialog';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { AuditLogsTable } from '@/components/AuditLogsTable';
@@ -63,6 +65,8 @@ const AdminDashboard = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isWorkerDialogOpen, setIsWorkerDialogOpen] = useState(false);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [isBuildingDialogOpen, setIsBuildingDialogOpen] = useState(false);
+  const [isFacilityDialogOpen, setIsFacilityDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const user = authStorage.getUser();
@@ -277,14 +281,22 @@ const AdminDashboard = () => {
               <TabsTrigger value="audit">Audit Logs</TabsTrigger>
             </TabsList>
             
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" onClick={() => setIsWorkerDialogOpen(true)}>
                 <Users className="mr-2 h-4 w-4" />
                 Add Worker
               </Button>
+              <Button variant="outline" onClick={() => setIsBuildingDialogOpen(true)}>
+                <Building2 className="mr-2 h-4 w-4" />
+                Buildings
+              </Button>
+              <Button variant="outline" onClick={() => setIsFacilityDialogOpen(true)}>
+                <Warehouse className="mr-2 h-4 w-4" />
+                Facilities
+              </Button>
               <Button variant="outline" onClick={() => setIsTemplateDialogOpen(true)}>
                 <FileStack className="mr-2 h-4 w-4" />
-                Manage Templates
+                Templates
               </Button>
               <Button onClick={() => setIsTaskDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -350,6 +362,16 @@ const AdminDashboard = () => {
       <TaskTemplateManagementDialog
         open={isTemplateDialogOpen}
         onOpenChange={setIsTemplateDialogOpen}
+      />
+
+      <BuildingManagementDialog
+        open={isBuildingDialogOpen}
+        onOpenChange={setIsBuildingDialogOpen}
+      />
+
+      <FacilityManagementDialog
+        open={isFacilityDialogOpen}
+        onOpenChange={setIsFacilityDialogOpen}
       />
     </div>
   );
