@@ -3,27 +3,25 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { getTaskTemplates, createTaskTemplate, deleteTaskTemplate, getFacilities, TaskTemplate, Facility } from '@/lib/api';
+import { getFacilities, createFacility, deleteFacility, getBuildings, Facility, Building } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Warehouse } from 'lucide-react';
 
-interface TaskTemplateManagementDialogProps {
+interface FacilityManagementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplateManagementDialogProps) => {
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+export const FacilityManagementDialog = ({ open, onOpenChange }: FacilityManagementDialogProps) => {
   const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [buildings, setBuildings] = useState<Building[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedFacilityId, setSelectedFacilityId] = useState('');
+  const [name, setName] = useState('');
+  const [selectedBuildingId, setSelectedBuildingId] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -34,12 +32,12 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [templatesData, facilitiesData] = await Promise.all([
-        getTaskTemplates(),
-        getFacilities()
+      const [facilitiesData, buildingsData] = await Promise.all([
+        getFacilities(),
+        getBuildings()
       ]);
-      setTemplates(templatesData);
       setFacilities(facilitiesData);
+      setBuildings(buildingsData);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -51,28 +49,27 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
     }
   };
 
-  const handleCreateTemplate = async (e: React.FormEvent) => {
+  const handleCreateFacility = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title || !description || !selectedFacilityId) {
+    if (!name.trim() || !selectedBuildingId) {
       toast({
         variant: "destructive",
         title: "Validation Error",
-        description: "Please fill in all fields and select a facility",
+        description: "Please enter a facility name and select a building",
       });
       return;
     }
 
     setIsCreating(true);
     try {
-      await createTaskTemplate({ title, description, facility_id: selectedFacilityId });
+      await createFacility(name.trim(), selectedBuildingId);
       toast({
         title: "Success",
-        description: "Task template created successfully",
+        description: "Facility created successfully",
       });
-      setTitle('');
-      setDescription('');
-      setSelectedFacilityId('');
+      setName('');
+      setSelectedBuildingId('');
       setShowForm(false);
       loadData();
     } catch (error) {
@@ -82,18 +79,12 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
     }
   };
 
-  const getFacilityName = (facilityId?: string) => {
-    if (!facilityId) return 'N/A';
-    const facility = facilities.find(f => f.id === facilityId);
-    return facility?.name || facilityId;
-  };
-
-  const handleDeleteTemplate = async (templateId: string) => {
+  const handleDeleteFacility = async (facilityId: string) => {
     try {
-      await deleteTaskTemplate(templateId);
+      await deleteFacility(facilityId);
       toast({
         title: "Success",
-        description: "Task template deleted",
+        description: "Facility deleted",
       });
       loadData();
     } catch (error) {
@@ -101,13 +92,21 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
     }
   };
 
+  const getBuildingName = (buildingId: string) => {
+    const building = buildings.find(b => b.id === buildingId);
+    return building?.name || buildingId;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Manage Task Templates</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Warehouse className="h-5 w-5" />
+            Manage Facilities
+          </DialogTitle>
           <DialogDescription>
-            Create and manage reusable task templates tied to facilities
+            Create and manage facilities within buildings
           </DialogDescription>
         </DialogHeader>
         
@@ -125,54 +124,42 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
             <Button 
               size="sm" 
               onClick={() => setShowForm(!showForm)}
-              disabled={facilities.length === 0}
+              disabled={buildings.length === 0}
             >
               <Plus className="h-4 w-4 mr-2" />
-              New Template
+              New Facility
             </Button>
           </div>
 
-          {facilities.length === 0 && !isLoading && (
+          {buildings.length === 0 && !isLoading && (
             <div className="text-center py-4 text-muted-foreground bg-muted/50 rounded-lg">
-              Please create a facility first before adding task templates.
+              Please create a building first before adding facilities.
             </div>
           )}
 
-          {showForm && facilities.length > 0 && (
-            <form onSubmit={handleCreateTemplate} className="space-y-4 p-4 border rounded-lg bg-muted/50">
+          {showForm && buildings.length > 0 && (
+            <form onSubmit={handleCreateFacility} className="space-y-4 p-4 border rounded-lg bg-muted/50">
               <div className="space-y-2">
-                <Label htmlFor="template-title">Template Title</Label>
+                <Label htmlFor="facility-name">Facility Name</Label>
                 <Input
-                  id="template-title"
-                  placeholder="Enter template title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  id="facility-name"
+                  placeholder="Enter facility name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="template-description">Description</Label>
-                <Textarea
-                  id="template-description"
-                  placeholder="Enter template description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={3}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="facility">Facility</Label>
-                <Select value={selectedFacilityId} onValueChange={setSelectedFacilityId}>
+                <Label htmlFor="building">Building</Label>
+                <Select value={selectedBuildingId} onValueChange={setSelectedBuildingId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a facility" />
+                    <SelectValue placeholder="Select a building" />
                   </SelectTrigger>
                   <SelectContent>
-                    {facilities.map((facility) => (
-                      <SelectItem key={facility.id} value={facility.id}>
-                        {facility.name} {facility.building_name ? `(${facility.building_name})` : ''}
+                    {buildings.map((building) => (
+                      <SelectItem key={building.id} value={building.id}>
+                        {building.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -185,15 +172,14 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
                   variant="outline"
                   onClick={() => {
                     setShowForm(false);
-                    setTitle('');
-                    setDescription('');
-                    setSelectedFacilityId('');
+                    setName('');
+                    setSelectedBuildingId('');
                   }}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isCreating}>
-                  {isCreating ? 'Creating...' : 'Create Template'}
+                  {isCreating ? 'Creating...' : 'Create Facility'}
                 </Button>
               </div>
             </form>
@@ -202,37 +188,33 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-muted-foreground text-sm">Loading templates...</p>
+              <p className="text-muted-foreground text-sm">Loading facilities...</p>
             </div>
-          ) : templates.length === 0 ? (
+          ) : facilities.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No task templates found. Create one to get started.
+              No facilities found. Create one to get started.
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Facility</TableHead>
-                  <TableHead>Description</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Building</TableHead>
                   <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {templates.map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.title}</TableCell>
+                {facilities.map((facility) => (
+                  <TableRow key={facility.id}>
+                    <TableCell className="font-medium">{facility.name}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {template.facility_name || getFacilityName(template.facility_id)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground max-w-[200px] truncate">
-                      {template.description}
+                      {facility.building_name || getBuildingName(facility.building_id)}
                     </TableCell>
                     <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteTemplate(template.id)}
+                        onClick={() => handleDeleteFacility(facility.id)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
