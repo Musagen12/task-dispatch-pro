@@ -24,6 +24,7 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedFacilityId, setSelectedFacilityId] = useState('');
+  const [selectedTaskType, setSelectedTaskType] = useState<'recurring' | 'one_off_short'>('recurring');
 
   useEffect(() => {
     if (open) {
@@ -65,7 +66,7 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
 
     setIsCreating(true);
     try {
-      await createTaskTemplate({ title, description, facility_id: selectedFacilityId });
+      await createTaskTemplate({ title, description, task_type: selectedTaskType, facility_id: selectedFacilityId });
       toast({
         title: "Success",
         description: "Task template created successfully",
@@ -73,6 +74,7 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
       setTitle('');
       setDescription('');
       setSelectedFacilityId('');
+      setSelectedTaskType('recurring');
       setShowForm(false);
       loadData();
     } catch (error) {
@@ -178,6 +180,19 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-type">Task Type</Label>
+                <Select value={selectedTaskType} onValueChange={(v) => setSelectedTaskType(v as 'recurring' | 'one_off_short')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select task type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="recurring">Recurring</SelectItem>
+                    <SelectItem value="one_off_short">One-Off Short</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               
               <div className="flex gap-2">
                 <Button
@@ -188,6 +203,7 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
                     setTitle('');
                     setDescription('');
                     setSelectedFacilityId('');
+                    setSelectedTaskType('recurring');
                   }}
                 >
                   Cancel
@@ -214,6 +230,7 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead>Facility</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead className="w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -223,7 +240,10 @@ export const TaskTemplateManagementDialog = ({ open, onOpenChange }: TaskTemplat
                   <TableRow key={template.id}>
                     <TableCell className="font-medium">{template.title}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {template.facility_name || getFacilityName(template.facility_id)}
+                      {template.facility?.name || getFacilityName(template.facility_id)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground capitalize">
+                      {template.task_type?.replace('_', ' ') || 'N/A'}
                     </TableCell>
                     <TableCell className="text-muted-foreground max-w-[200px] truncate">
                       {template.description}

@@ -21,17 +21,23 @@ interface ActiveTaskCardProps {
 }
 
 export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTaskCardProps) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
+      const urls = files.map(file => URL.createObjectURL(file));
+      setPreviewUrls(prev => [...prev, ...urls]);
     }
+  };
+
+  const removeFile = (index: number) => {
+    URL.revokeObjectURL(previewUrls[index]);
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleAcknowledge = () => {
@@ -39,15 +45,19 @@ export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTa
   };
 
   const handleComplete = async () => {
-    if (!selectedFile) {
-      alert('Please upload a photo before completing the task');
+    if (selectedFiles.length === 0) {
+      alert('Please upload at least one photo before completing the task');
       return;
     }
 
     setIsUploading(true);
     try {
-      await onPhotoUpload(task.id, [selectedFile]);
+      await onPhotoUpload(task.id, selectedFiles);
       onStatusUpdate(task.id, 'completed');
+      // Clean up preview URLs
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+      setSelectedFiles([]);
+      setPreviewUrls([]);
     } finally {
       setIsUploading(false);
     }
@@ -81,32 +91,47 @@ export const ActiveTaskCard = ({ task, onStatusUpdate, onPhotoUpload }: ActiveTa
         {task.status === 'in_progress' && (
           <div className="space-y-4">
             <div>
-              <h4 className="font-medium mb-2">Upload Completion Photo</h4>
+              <h4 className="font-medium mb-2">Upload Completion Photos</h4>
+              <p className="text-sm text-muted-foreground mb-2">You can upload multiple evidence photos</p>
               <div className="flex items-center gap-4">
                 <Input
                   type="file"
                   accept="image/*"
                   onChange={handleFileSelect}
                   className="flex-1"
+                  multiple
                 />
                 <Camera className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
 
-            {previewUrl && (
+            {previewUrls.length > 0 && (
               <div className="space-y-2">
-                <h5 className="text-sm font-medium">Preview:</h5>
-                <img 
-                  src={previewUrl} 
-                  alt="Task completion preview" 
-                  className="max-w-full h-48 object-cover rounded-md border"
-                />
+                <h5 className="text-sm font-medium">Preview ({selectedFiles.length} photo{selectedFiles.length > 1 ? 's' : ''}):</h5>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {previewUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={url} 
+                        alt={`Task completion preview ${index + 1}`} 
+                        className="w-full h-32 object-cover rounded-md border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
             <Button 
               onClick={handleComplete}
-              disabled={!selectedFile || isUploading}
+              disabled={selectedFiles.length === 0 || isUploading}
               className="w-full"
             >
               {isUploading ? (
