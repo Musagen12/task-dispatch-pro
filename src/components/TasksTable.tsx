@@ -6,12 +6,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Camera, RefreshCw, FileImage, RotateCcw } from 'lucide-react';
+import { Eye, Camera, RefreshCw, FileImage, RotateCcw, Trash2 } from 'lucide-react';
 import { formatDateTime } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { resetTaskStatus } from '@/lib/api';
+import { resetTaskStatus, deleteTask } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface Evidence {
@@ -48,6 +48,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [resetReason, setResetReason] = useState('');
   const [resettingTaskId, setResettingTaskId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -92,6 +95,30 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       });
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deletingTaskId) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteTask(deletingTaskId);
+      toast({
+        title: "Task Deleted",
+        description: "The task has been successfully deleted",
+      });
+      setDeleteDialogOpen(false);
+      setDeletingTaskId(null);
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: error?.message || "Failed to delete task",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -263,6 +290,20 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                          </Button>
                        )}
                        
+                       {isAdmin && (
+                         <Button
+                           variant="outline"
+                           size="sm"
+                           onClick={() => {
+                             setDeletingTaskId(task.id);
+                             setDeleteDialogOpen(true);
+                           }}
+                           className="text-destructive hover:text-destructive"
+                         >
+                           <Trash2 className="h-4 w-4" />
+                         </Button>
+                       )}
+                       
                        {task.photo_url && (
                          <Badge variant="secondary" className="text-xs">
                            <Camera className="h-3 w-3 mr-1" />
@@ -349,6 +390,36 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               disabled={isResetting || !resetReason.trim()}
             >
               {isResetting ? 'Resetting...' : 'Reset Task'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Task Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this task? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeletingTaskId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Task'}
             </Button>
           </DialogFooter>
         </DialogContent>
