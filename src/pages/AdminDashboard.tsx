@@ -7,12 +7,13 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { authStorage, logout } from '@/lib/auth';
 import { getTasks, getComplaints, getAdminComplaints, getAuditLogs, updateTaskStatus, updateComplaintStatus, getWorkers, updateWorkerStatus, removeWorker } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText, FileStack, Building2, Warehouse } from 'lucide-react';
+import { LogOut, Plus, Users, ClipboardList, AlertTriangle, FileText, FileStack, Building2, Warehouse, CalendarClock } from 'lucide-react';
 import { TaskCreateDialog } from '@/components/TaskCreateDialog';
 import { WorkerManagementDialog } from '@/components/WorkerManagementDialog';
 import { TaskTemplateManagementDialog } from '@/components/TaskTemplateManagementDialog';
 import { BuildingManagementDialog } from '@/components/BuildingManagementDialog';
 import { FacilityManagementDialog } from '@/components/FacilityManagementDialog';
+import { DutyRosterManagementDialog } from '@/components/DutyRosterManagementDialog';
 import { TasksTable } from '@/components/TasksTable';
 import { ComplaintsTable } from '@/components/ComplaintsTable';
 import { AuditLogsTable } from '@/components/AuditLogsTable';
@@ -67,6 +68,7 @@ const AdminDashboard = () => {
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [isBuildingDialogOpen, setIsBuildingDialogOpen] = useState(false);
   const [isFacilityDialogOpen, setIsFacilityDialogOpen] = useState(false);
+  const [isDutyRosterDialogOpen, setIsDutyRosterDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const user = authStorage.getUser();
@@ -298,6 +300,10 @@ const AdminDashboard = () => {
                 <FileStack className="mr-2 h-4 w-4" />
                 Templates
               </Button>
+              <Button variant="outline" onClick={() => setIsDutyRosterDialogOpen(true)}>
+                <CalendarClock className="mr-2 h-4 w-4" />
+                Duty Roster
+              </Button>
               <Button onClick={() => setIsTaskDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Assign Task
@@ -372,6 +378,11 @@ const AdminDashboard = () => {
       <FacilityManagementDialog
         open={isFacilityDialogOpen}
         onOpenChange={setIsFacilityDialogOpen}
+      />
+
+      <DutyRosterManagementDialog
+        open={isDutyRosterDialogOpen}
+        onOpenChange={setIsDutyRosterDialogOpen}
       />
     </div>
   );

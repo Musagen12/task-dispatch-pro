@@ -176,14 +176,17 @@ export interface TaskTemplate {
   id: string;
   title: string;
   description: string;
+  task_type: 'recurring' | 'one_off_short';
   facility_id?: string;
-  facility_name?: string;
+  facility?: {
+    name: string;
+  };
   created_at?: string;
   updated_at?: string;
 }
 
 export const getTaskTemplates = (): Promise<TaskTemplate[]> => apiRequest('/task_template/task-templates/');
-export const createTaskTemplate = (template: {title: string, description: string, facility_id: string}) => 
+export const createTaskTemplate = (template: {title: string, description: string, task_type: string, facility_id: string}) => 
   apiRequest('/task_template/task-templates/', { 
     method: 'POST',
     body: JSON.stringify(template)
@@ -197,6 +200,45 @@ export const updateTaskTemplate = (templateId: string, template: {title?: string
   });
 export const deleteTaskTemplate = (templateId: string) => 
   apiRequest(`/task_template/task-templates/${templateId}`, { method: 'DELETE' });
+
+// Duty Roster API
+export interface DutyRoster {
+  id: string;
+  template_id: string;
+  worker_name: string;
+  start_time: string;
+  days: string[];
+  active: boolean;
+}
+
+export interface DutyRosterCreate {
+  template_id: string;
+  worker_name: string;
+  start_time: string;
+  days: string[];
+}
+
+export interface DutyRosterUpdate {
+  start_time?: string;
+  active?: boolean;
+  days?: string[];
+}
+
+export const getDutyRosters = (): Promise<DutyRoster[]> => apiRequest('/duty_roster/');
+export const getDutyRoster = (rosterId: string): Promise<DutyRoster> => 
+  apiRequest(`/duty_roster/${rosterId}`);
+export const createDutyRoster = (roster: DutyRosterCreate) => 
+  apiRequest('/duty_roster/', { 
+    method: 'POST',
+    body: JSON.stringify(roster)
+  });
+export const updateDutyRoster = (rosterId: string, update: DutyRosterUpdate) => 
+  apiRequest(`/duty_roster/${rosterId}`, { 
+    method: 'PATCH',
+    body: JSON.stringify(update)
+  });
+export const deleteDutyRoster = (rosterId: string) => 
+  apiRequest(`/duty_roster/${rosterId}`, { method: 'DELETE' });
 
 export const getAdminComplaints = (): Promise<any[]> => apiRequest('/admin/complaints/');
 export const updateComplaintStatus = (complaintId: string, status: string) => 
