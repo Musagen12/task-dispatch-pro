@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { createTask, getWorkers, getTasks, getTaskTemplates, TaskTemplate } from '@/lib/api';
+import { createTask, getWorkers, getTaskTemplates, TaskTemplate } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface TaskCreateDialogProps {
@@ -38,19 +38,14 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
   const loadData = async () => {
     try {
       setIsLoadingData(true);
-      const [workersData, tasksData, templatesData] = await Promise.all([
+      const [workersData, templatesData] = await Promise.all([
         getWorkers(),
-        getTasks(),
         getTaskTemplates()
       ]);
       
-      // Get workers who are active and don't have an active task
+      // Show all active workers - API will handle task assignment restrictions
       const activeWorkers = workersData.filter(worker => worker.status === 'active');
-      const activeTasks = tasksData.filter(task => task.status === 'pending' || task.status === 'in_progress');
-      const busyWorkerUsernames = new Set(activeTasks.map(task => task.assigned_to));
-      
-      const availableWorkers = activeWorkers.filter(worker => !busyWorkerUsernames.has(worker.username));
-      setWorkers(availableWorkers);
+      setWorkers(activeWorkers);
       setTemplates(templatesData);
     } catch (error) {
       toast({
