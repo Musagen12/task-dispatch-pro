@@ -65,10 +65,6 @@ const AdminDashboard = () => {
   const [workers, setWorkers] = useState<any[]>([]);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isWorkerDialogOpen, setIsWorkerDialogOpen] = useState(false);
-  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [isBuildingDialogOpen, setIsBuildingDialogOpen] = useState(false);
-  const [isFacilityDialogOpen, setIsFacilityDialogOpen] = useState(false);
-  const [isDutyRosterDialogOpen, setIsDutyRosterDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const user = authStorage.getUser();
@@ -275,80 +271,131 @@ const AdminDashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="workers" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="workers">Workers</TabsTrigger>
-              <TabsTrigger value="tasks">Tasks</TabsTrigger>
-              <TabsTrigger value="complaints">Complaints</TabsTrigger>
-              <TabsTrigger value="audit">Audit Logs</TabsTrigger>
-            </TabsList>
-            
-            <div className="flex gap-2 flex-wrap">
-              <Button variant="outline" onClick={() => setIsWorkerDialogOpen(true)}>
-                <Users className="mr-2 h-4 w-4" />
-                Add Worker
-              </Button>
-              <Button variant="outline" onClick={() => setIsBuildingDialogOpen(true)}>
-                <Building2 className="mr-2 h-4 w-4" />
-                Buildings
-              </Button>
-              <Button variant="outline" onClick={() => setIsFacilityDialogOpen(true)}>
-                <Warehouse className="mr-2 h-4 w-4" />
-                Facilities
-              </Button>
-              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(true)}>
-                <FileStack className="mr-2 h-4 w-4" />
-                Templates
-              </Button>
-              <Button variant="outline" onClick={() => setIsDutyRosterDialogOpen(true)}>
-                <CalendarClock className="mr-2 h-4 w-4" />
-                Duty Roster
-              </Button>
-              <Button onClick={() => setIsTaskDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Assign Task
-              </Button>
-            </div>
-          </div>
+          <TabsList className="flex-wrap h-auto gap-1">
+            <TabsTrigger value="workers">Workers</TabsTrigger>
+            <TabsTrigger value="tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="complaints">Complaints</TabsTrigger>
+            <TabsTrigger value="buildings">Buildings</TabsTrigger>
+            <TabsTrigger value="facilities">Facilities</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
+            <TabsTrigger value="duty-roster">Duty Roster</TabsTrigger>
+            <TabsTrigger value="audit">Audit Logs</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="workers">
-            <WorkersTable 
-              workers={workers}
-              onStatusUpdate={async (username: string, status: string) => {
-                await updateWorkerStatus(username, status);
-                await loadData();
-              }}
-              onRemoveWorker={async (username: string) => {
-                await removeWorker(username);
-                await loadData();
-              }}
-              onRefresh={loadWorkers}
-            />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Workers Management</CardTitle>
+                  <CardDescription>Manage your workers</CardDescription>
+                </div>
+                <Button onClick={() => setIsWorkerDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Worker
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <WorkersTable 
+                  workers={workers}
+                  onStatusUpdate={async (username: string, status: string) => {
+                    await updateWorkerStatus(username, status);
+                    await loadData();
+                  }}
+                  onRemoveWorker={async (username: string) => {
+                    await removeWorker(username);
+                    await loadData();
+                  }}
+                  onRefresh={loadWorkers}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="tasks">
-            <TasksTable 
-              tasks={tasks} 
-              onStatusUpdate={() => {}} // Admins cannot update task status - only workers can
-              onRefresh={loadTasks}
-              isAdmin={true}
-            />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Tasks Management</CardTitle>
+                  <CardDescription>View and manage tasks</CardDescription>
+                </div>
+                <Button onClick={() => setIsTaskDialogOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Assign Task
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <TasksTable 
+                  tasks={tasks} 
+                  onStatusUpdate={() => {}}
+                  onRefresh={loadTasks}
+                  isAdmin={true}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="complaints">
-            <ComplaintsTable 
-              complaints={complaints}
-              onStatusUpdate={handleComplaintStatusUpdate}
-              onRefresh={loadComplaints}
-              isAdmin={true}
+            <Card>
+              <CardHeader>
+                <CardTitle>Complaints Management</CardTitle>
+                <CardDescription>View and resolve complaints</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ComplaintsTable 
+                  complaints={complaints}
+                  onStatusUpdate={handleComplaintStatusUpdate}
+                  onRefresh={loadComplaints}
+                  isAdmin={true}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="buildings">
+            <BuildingManagementDialog
+              open={true}
+              onOpenChange={() => {}}
+              embedded={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="facilities">
+            <FacilityManagementDialog
+              open={true}
+              onOpenChange={() => {}}
+              embedded={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="templates">
+            <TaskTemplateManagementDialog
+              open={true}
+              onOpenChange={() => {}}
+              embedded={true}
+            />
+          </TabsContent>
+
+          <TabsContent value="duty-roster">
+            <DutyRosterManagementDialog
+              open={true}
+              onOpenChange={() => {}}
+              embedded={true}
             />
           </TabsContent>
 
           <TabsContent value="audit">
-            <AuditLogsTable 
-              auditLogs={auditLogs}
-              onRefresh={loadAuditLogs}
-            />
+            <Card>
+              <CardHeader>
+                <CardTitle>Audit Logs</CardTitle>
+                <CardDescription>System activity logs</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AuditLogsTable 
+                  auditLogs={auditLogs}
+                  onRefresh={loadAuditLogs}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -363,26 +410,6 @@ const AdminDashboard = () => {
         open={isWorkerDialogOpen}
         onOpenChange={setIsWorkerDialogOpen}
         onWorkerAdded={loadData}
-      />
-
-      <TaskTemplateManagementDialog
-        open={isTemplateDialogOpen}
-        onOpenChange={setIsTemplateDialogOpen}
-      />
-
-      <BuildingManagementDialog
-        open={isBuildingDialogOpen}
-        onOpenChange={setIsBuildingDialogOpen}
-      />
-
-      <FacilityManagementDialog
-        open={isFacilityDialogOpen}
-        onOpenChange={setIsFacilityDialogOpen}
-      />
-
-      <DutyRosterManagementDialog
-        open={isDutyRosterDialogOpen}
-        onOpenChange={setIsDutyRosterDialogOpen}
       />
     </div>
   );

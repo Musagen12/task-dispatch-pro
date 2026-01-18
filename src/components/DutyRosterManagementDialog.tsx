@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,11 +18,12 @@ import {
   TaskTemplate 
 } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Trash2, RefreshCw, Edit2, X, Check } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, Edit2, X, Check, CalendarClock } from 'lucide-react';
 
 interface DutyRosterManagementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
 }
 
 const DAYS_OF_WEEK = [
@@ -45,7 +47,7 @@ const TIME_OPTIONS = Array.from({ length: 17 }, (_, i) => {
   return { value: time24, label: time12 };
 });
 
-export const DutyRosterManagementDialog = ({ open, onOpenChange }: DutyRosterManagementDialogProps) => {
+export const DutyRosterManagementDialog = ({ open, onOpenChange, embedded = false }: DutyRosterManagementDialogProps) => {
   const [rosters, setRosters] = useState<DutyRoster[]>([]);
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [workers, setWorkers] = useState<any[]>([]);
@@ -65,10 +67,10 @@ export const DutyRosterManagementDialog = ({ open, onOpenChange }: DutyRosterMan
   const [editDays, setEditDays] = useState<string[]>([]);
 
   useEffect(() => {
-    if (open) {
+    if (open || embedded) {
       loadData();
     }
-  }, [open]);
+  }, [open, embedded]);
 
   const loadData = async () => {
     try {
@@ -227,6 +229,268 @@ export const DutyRosterManagementDialog = ({ open, onOpenChange }: DutyRosterMan
     return days.map(d => d.charAt(0).toUpperCase() + d.slice(1, 3)).join(', ');
   };
 
+  const content = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={loadData}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+        <Button 
+          size="sm" 
+          onClick={() => setShowForm(!showForm)}
+          disabled={templates.length === 0 || workers.length === 0}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          New Roster
+        </Button>
+      </div>
+
+      {(templates.length === 0 || workers.length === 0) && !isLoading && (
+        <div className="text-center py-4 text-muted-foreground bg-muted/50 rounded-lg">
+          {templates.length === 0 && "Please create task templates first. "}
+          {workers.length === 0 && "Please add workers first."}
+        </div>
+      )}
+
+      {showForm && templates.length > 0 && workers.length > 0 && (
+        <form onSubmit={handleCreateRoster} className="space-y-4 p-4 border rounded-lg bg-muted/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="template">Task Template</Label>
+              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="worker">Worker</Label>
+              <Select value={selectedWorkerName} onValueChange={setSelectedWorkerName}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a worker" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workers.map((worker) => (
+                    <SelectItem key={worker.id || worker.username} value={worker.username}>
+                      {worker.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">Start Time (8 AM - 4 PM)</Label>
+              <Select value={selectedTime} onValueChange={setSelectedTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_OPTIONS.map((time) => (
+                    <SelectItem key={time.value} value={time.value}>
+                      {time.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Days of Week</Label>
+              <div className="flex flex-wrap gap-2">
+                {DAYS_OF_WEEK.map((day) => (
+                  <div 
+                    key={day.value}
+                    className="flex items-center space-x-2"
+                  >
+                    <Checkbox
+                      id={`day-${day.value}`}
+                      checked={selectedDays.includes(day.value)}
+                      onCheckedChange={() => toggleDay(day.value)}
+                    />
+                    <label 
+                      htmlFor={`day-${day.value}`}
+                      className="text-sm cursor-pointer"
+                    >
+                      {day.label.slice(0, 3)}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetForm}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? 'Creating...' : 'Create Roster'}
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {isLoading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground text-sm">Loading rosters...</p>
+        </div>
+      ) : rosters.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          No duty rosters found. Create one to get started.
+        </div>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Template</TableHead>
+              <TableHead>Worker</TableHead>
+              <TableHead>Start Time</TableHead>
+              <TableHead>Days</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rosters.map((roster) => (
+              <TableRow key={roster.id}>
+                <TableCell className="font-medium">
+                  {getTemplateName(roster.template_id)}
+                </TableCell>
+                <TableCell>{roster.worker_name}</TableCell>
+                <TableCell>
+                  {editingRosterId === roster.id ? (
+                    <Select value={editTime} onValueChange={setEditTime}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TIME_OPTIONS.map((time) => (
+                          <SelectItem key={time.value} value={time.value}>
+                            {time.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    formatTime(roster.start_time)
+                  )}
+                </TableCell>
+                <TableCell>
+                  {editingRosterId === roster.id ? (
+                    <div className="flex flex-wrap gap-1">
+                      {DAYS_OF_WEEK.map((day) => (
+                        <div 
+                          key={day.value}
+                          className="flex items-center space-x-1"
+                        >
+                          <Checkbox
+                            id={`edit-day-${day.value}`}
+                            checked={editDays.includes(day.value)}
+                            onCheckedChange={() => toggleDay(day.value, true)}
+                          />
+                          <label 
+                            htmlFor={`edit-day-${day.value}`}
+                            className="text-xs cursor-pointer"
+                          >
+                            {day.label.slice(0, 2)}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    formatDays(roster.days)
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Switch
+                    checked={roster.active}
+                    onCheckedChange={() => handleToggleActive(roster)}
+                  />
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    {editingRosterId === roster.id ? (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => saveEdit(roster.id)}
+                          className="text-success hover:text-success"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEdit}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(roster)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteRoster(roster.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5" />
+            Manage Duty Rosters
+          </CardTitle>
+          <CardDescription>Create and manage worker duty schedules tied to task templates</CardDescription>
+        </CardHeader>
+        <CardContent>{content}</CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
@@ -236,251 +500,7 @@ export const DutyRosterManagementDialog = ({ open, onOpenChange }: DutyRosterMan
             Create and manage worker duty schedules tied to task templates
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={loadData}
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button 
-              size="sm" 
-              onClick={() => setShowForm(!showForm)}
-              disabled={templates.length === 0 || workers.length === 0}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Roster
-            </Button>
-          </div>
-
-          {(templates.length === 0 || workers.length === 0) && !isLoading && (
-            <div className="text-center py-4 text-muted-foreground bg-muted/50 rounded-lg">
-              {templates.length === 0 && "Please create task templates first. "}
-              {workers.length === 0 && "Please add workers first."}
-            </div>
-          )}
-
-          {showForm && templates.length > 0 && workers.length > 0 && (
-            <form onSubmit={handleCreateRoster} className="space-y-4 p-4 border rounded-lg bg-muted/50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="template">Task Template</Label>
-                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="worker">Worker</Label>
-                  <Select value={selectedWorkerName} onValueChange={setSelectedWorkerName}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a worker" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {workers.map((worker) => (
-                        <SelectItem key={worker.id || worker.username} value={worker.username}>
-                          {worker.username}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="time">Start Time (8 AM - 4 PM)</Label>
-                  <Select value={selectedTime} onValueChange={setSelectedTime}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIME_OPTIONS.map((time) => (
-                        <SelectItem key={time.value} value={time.value}>
-                          {time.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Days of Week</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <div 
-                        key={day.value}
-                        className="flex items-center space-x-2"
-                      >
-                        <Checkbox
-                          id={`day-${day.value}`}
-                          checked={selectedDays.includes(day.value)}
-                          onCheckedChange={() => toggleDay(day.value)}
-                        />
-                        <label 
-                          htmlFor={`day-${day.value}`}
-                          className="text-sm cursor-pointer"
-                        >
-                          {day.label.slice(0, 3)}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetForm}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? 'Creating...' : 'Create Roster'}
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {isLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto mb-2"></div>
-              <p className="text-muted-foreground text-sm">Loading rosters...</p>
-            </div>
-          ) : rosters.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No duty rosters found. Create one to get started.
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Template</TableHead>
-                  <TableHead>Worker</TableHead>
-                  <TableHead>Start Time</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Active</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rosters.map((roster) => (
-                  <TableRow key={roster.id}>
-                    <TableCell className="font-medium">
-                      {getTemplateName(roster.template_id)}
-                    </TableCell>
-                    <TableCell>{roster.worker_name}</TableCell>
-                    <TableCell>
-                      {editingRosterId === roster.id ? (
-                        <Select value={editTime} onValueChange={setEditTime}>
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {TIME_OPTIONS.map((time) => (
-                              <SelectItem key={time.value} value={time.value}>
-                                {time.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        formatTime(roster.start_time)
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {editingRosterId === roster.id ? (
-                        <div className="flex flex-wrap gap-1">
-                          {DAYS_OF_WEEK.map((day) => (
-                            <div 
-                              key={day.value}
-                              className="flex items-center space-x-1"
-                            >
-                              <Checkbox
-                                id={`edit-day-${day.value}`}
-                                checked={editDays.includes(day.value)}
-                                onCheckedChange={() => toggleDay(day.value, true)}
-                              />
-                              <label 
-                                htmlFor={`edit-day-${day.value}`}
-                                className="text-xs cursor-pointer"
-                              >
-                                {day.label.slice(0, 2)}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        formatDays(roster.days)
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={roster.active}
-                        onCheckedChange={() => handleToggleActive(roster)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {editingRosterId === roster.id ? (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => saveEdit(roster.id)}
-                              className="text-success hover:text-success"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={cancelEdit}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => startEdit(roster)}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteRoster(roster.id)}
-                              className="text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+        {content}
       </DialogContent>
     </Dialog>
   );
