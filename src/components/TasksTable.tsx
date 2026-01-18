@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,8 +6,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Camera, RefreshCw, FileImage, RotateCcw, Trash2 } from 'lucide-react';
-import { formatDateTime } from '@/lib/dateUtils';
+import { Eye, Camera, RefreshCw, FileImage, RotateCcw, Trash2, Filter } from 'lucide-react';
+import { formatDateTime, formatDate } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,6 +43,8 @@ interface TasksTableProps {
 export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, isAdmin }: TasksTableProps) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [templateFilter, setTemplateFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetReason, setResetReason] = useState('');
@@ -64,6 +66,21 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
     { value: 'pending', label: 'Pending' },
     { value: 'in_progress', label: 'In Progress' },
     { value: 'completed', label: 'Completed' },
+  ];
+
+  // Extract unique task titles (templates) for filter
+  const uniqueTemplates = useMemo(() => {
+    const titles = [...new Set(tasks.map(task => task.title))];
+    return titles.sort();
+  }, [tasks]);
+
+  // Date filter options
+  const dateFilterOptions = [
+    { value: 'all', label: 'All Time' },
+    { value: 'today', label: 'Today' },
+    { value: 'yesterday', label: 'Yesterday' },
+    { value: 'week', label: 'This Week' },
+    { value: 'month', label: 'This Month' },
   ];
 
   const handleResetTask = async () => {
@@ -122,14 +139,57 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
     }
   };
 
-  // Filter and sort tasks
-  const filteredTasks = tasks.filter(task => 
-    statusFilter === 'all' || task.status === statusFilter
-  );
+  // Filter tasks by status, template, and date
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      // Status filter
+      if (statusFilter !== 'all' && task.status !== statusFilter) return false;
+      
+      // Template filter
+      if (templateFilter !== 'all' && task.title !== templateFilter) return false;
+      
+      // Date filter
+      if (dateFilter !== 'all') {
+        const taskDate = new Date(task.created_at);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - 7);
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        switch (dateFilter) {
+          case 'today':
+            if (taskDate < today) return false;
+            break;
+          case 'yesterday':
+            if (taskDate < yesterday || taskDate >= today) return false;
+            break;
+          case 'week':
+            if (taskDate < weekStart) return false;
+            break;
+          case 'month':
+            if (taskDate < monthStart) return false;
+            break;
+        }
+      }
+      
+      return true;
+    });
+  }, [tasks, statusFilter, templateFilter, dateFilter]);
 
   const sortedTasks = [...filteredTasks].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
+
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setTemplateFilter('all');
+    setDateFilter('all');
+  };
+
+  const hasActiveFilters = statusFilter !== 'all' || templateFilter !== 'all' || dateFilter !== 'all';
 
   return (
     <Card>
@@ -141,10 +201,10 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               {isAdmin ? 'Manage all tasks and assignments' : 'Your task history and current assignments'}
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filter by status" />
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
@@ -155,6 +215,36 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                 ))}
               </SelectContent>
             </Select>
+            <Select value={templateFilter} onValueChange={setTemplateFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Template" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Templates</SelectItem>
+                {uniqueTemplates.map((title) => (
+                  <SelectItem key={title} value={title}>
+                    {title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="Date" />
+              </SelectTrigger>
+              <SelectContent>
+                {dateFilterOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
+                Clear filters
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={onRefresh}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
