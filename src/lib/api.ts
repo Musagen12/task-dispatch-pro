@@ -59,9 +59,25 @@ async function apiRequest<T>(
           description: "Invalid credentials. Please check your username and password.",
         });
       } else {
+        // Determine appropriate error title based on context
+        let errorTitle = "Error";
+        const errorLower = error.message.toLowerCase();
+        
+        if (error.status === 403) {
+          errorTitle = "Access Denied";
+        } else if (error.status === 404) {
+          errorTitle = "Not Found";
+        } else if (error.status === 409 || errorLower.includes('conflict') || errorLower.includes('already') || errorLower.includes('duty roster') || errorLower.includes('scheduled')) {
+          errorTitle = "Assignment Conflict";
+        } else if (error.status === 400) {
+          errorTitle = "Invalid Request";
+        } else if (error.status >= 500) {
+          errorTitle = "Server Error";
+        }
+        
         toast({
           variant: "destructive",
-          title: "Authentication Error",
+          title: errorTitle,
           description: error.message,
         });
       }
