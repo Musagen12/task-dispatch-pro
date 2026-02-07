@@ -46,7 +46,10 @@ export const TaskCreateDialog = ({ open, onOpenChange, onTaskCreated }: TaskCrea
       // Show all active workers - API will handle task assignment restrictions
       const activeWorkers = workersData.filter(worker => worker.status === 'active');
       setWorkers(activeWorkers);
-      setTemplates(templatesData);
+      
+      // Filter templates to only show one_off_short type for manual assignment
+      const oneOffTemplates = templatesData.filter(template => template.task_type === 'one_off_short');
+      setTemplates(oneOffTemplates);
     } catch (error) {
       toast({
         variant: "destructive",
