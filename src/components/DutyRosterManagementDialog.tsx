@@ -81,7 +81,9 @@ export const DutyRosterManagementDialog = ({ open, onOpenChange, embedded = fals
         getWorkers()
       ]);
       setRosters(rostersData);
-      setTemplates(templatesData);
+      // Filter templates to only show recurring type for duty rosters
+      const recurringTemplates = templatesData.filter(template => template.task_type === 'recurring');
+      setTemplates(recurringTemplates);
       setWorkers(workersData);
     } catch (error) {
       toast({
