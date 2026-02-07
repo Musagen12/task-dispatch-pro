@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { formatDateTime, formatDate } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { resetTaskStatus, deleteTask } from '@/lib/api';
+import { resetTaskStatus, deleteTask, getTaskTemplates, getFacilities, TaskTemplate, Facility } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface Evidence {
@@ -45,6 +45,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [facilityFilter, setFacilityFilter] = useState<string>('all');
   const [selectedTaskEvidence, setSelectedTaskEvidence] = useState<Evidence[] | null>(null);
   const [currentEvidenceIndex, setCurrentEvidenceIndex] = useState<number>(0);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -54,8 +55,34 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
+  const [facilities, setFacilities] = useState<Facility[]>([]);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  // Load templates and facilities for facility filtering
+  useEffect(() => {
+    const loadFilterData = async () => {
+      try {
+        const [templates, facilitiesData] = await Promise.all([
+          getTaskTemplates(),
+          getFacilities()
+        ]);
+        setTaskTemplates(templates);
+        setFacilities(facilitiesData);
+      } catch (error) {
+        console.error('Failed to load filter data:', error);
+      }
+    };
+    loadFilterData();
+  }, []);
+
+  // Map task title to facility
+  const getTaskFacility = (taskTitle: string): Facility | undefined => {
+    const template = taskTemplates.find(t => t.title === taskTitle);
+    if (!template?.facility_id) return undefined;
+    return facilities.find(f => f.id === template.facility_id);
+  };
 
   const getFullImageUrl = (filePath: string) => {
     // Remove any leading slash and construct the full URL
@@ -140,7 +167,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
     }
   };
 
-  // Filter tasks by status, template, and date
+  // Filter tasks by status, template, facility, and date
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       // Status filter
@@ -148,6 +175,12 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       
       // Template filter
       if (templateFilter !== 'all' && task.title !== templateFilter) return false;
+      
+      // Facility filter - map task title to template to facility
+      if (facilityFilter !== 'all') {
+        const template = taskTemplates.find(t => t.title === task.title);
+        if (!template?.facility_id || template.facility_id !== facilityFilter) return false;
+      }
       
       // Date filter
       if (dateFilter !== 'all') {
@@ -178,7 +211,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       
       return true;
     });
-  }, [tasks, statusFilter, templateFilter, dateFilter]);
+  }, [tasks, statusFilter, templateFilter, facilityFilter, dateFilter, taskTemplates]);
 
   const sortedTasks = [...filteredTasks].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -187,10 +220,11 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const clearFilters = () => {
     setStatusFilter('all');
     setTemplateFilter('all');
+    setFacilityFilter('all');
     setDateFilter('all');
   };
 
-  const hasActiveFilters = statusFilter !== 'all' || templateFilter !== 'all' || dateFilter !== 'all';
+  const hasActiveFilters = statusFilter !== 'all' || templateFilter !== 'all' || facilityFilter !== 'all' || dateFilter !== 'all';
 
   return (
     <Card>
@@ -225,6 +259,19 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                 {uniqueTemplates.map((title) => (
                   <SelectItem key={title} value={title}>
                     {title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={facilityFilter} onValueChange={setFacilityFilter}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Facility" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Facilities</SelectItem>
+                {facilities.map((facility) => (
+                  <SelectItem key={facility.id} value={facility.id}>
+                    {facility.name} {facility.building_name ? `(${facility.building_name})` : ''}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -270,7 +317,17 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
             <TableBody>
               {sortedTasks.map((task) => (
                 <TableRow key={task.id}>
-                  <TableCell className="font-medium">{task.title}</TableCell>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{task.title}</div>
+                      {getTaskFacility(task.title) && (
+                        <div className="text-xs text-muted-foreground">
+                          {getTaskFacility(task.title)?.name}
+                          {getTaskFacility(task.title)?.building_name && ` • ${getTaskFacility(task.title)?.building_name}`}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="max-w-xs truncate">{task.description}</TableCell>
                    <TableCell>
                      <StatusBadge status={task.status} />
