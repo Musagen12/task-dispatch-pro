@@ -6,7 +6,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, Camera, RefreshCw, FileImage, RotateCcw, Trash2, Filter } from 'lucide-react';
+import { Eye, Camera, RefreshCw, FileImage, RotateCcw, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateTime, formatDate } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
@@ -45,7 +45,8 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [templateFilter, setTemplateFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedTaskEvidence, setSelectedTaskEvidence] = useState<Evidence[] | null>(null);
+  const [currentEvidenceIndex, setCurrentEvidenceIndex] = useState<number>(0);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetReason, setResetReason] = useState('');
   const [resettingTaskId, setResettingTaskId] = useState<string | null>(null);
@@ -289,7 +290,10 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                          <Badge 
                            variant="secondary" 
                            className="text-xs cursor-pointer hover:bg-secondary/80"
-                           onClick={() => setSelectedImage(task.evidence[0].file_url)}
+                           onClick={() => {
+                             setSelectedTaskEvidence(task.evidence);
+                             setCurrentEvidenceIndex(0);
+                           }}
                          >
                            <FileImage className="h-3 w-3 mr-1" />
                            {task.evidence.length} image{task.evidence.length > 1 ? 's' : ''}
@@ -349,11 +353,14 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                                   <div className="grid grid-cols-2 gap-2">
                                     {task.evidence.map((evidence, index) => (
                                       <div key={evidence.id} className="relative group">
-                                        <ImageWithAuth
+                                      <ImageWithAuth
                                           srcPath={evidence.file_url}
                                           alt={`Evidence ${index + 1}`}
                                           className="w-full h-32 object-cover rounded-md border cursor-pointer hover:opacity-80"
-                                          onClick={() => setSelectedImage(evidence.file_url)}
+                                          onClick={() => {
+                                            setSelectedTaskEvidence(task.evidence);
+                                            setCurrentEvidenceIndex(index);
+                                          }}
                                         />
                                         <div className="absolute bottom-1 right-1 bg-black/50 text-white text-xs px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                                           {formatDateTime(evidence.uploaded_at)}
@@ -415,29 +422,65 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
         </div>
       </CardContent>
 
-      {/* Image Viewer Dialog */}
-      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+      {/* Image Viewer Dialog with Navigation */}
+      <Dialog open={!!selectedTaskEvidence} onOpenChange={() => setSelectedTaskEvidence(null)}>
         <DialogContent className="max-w-7xl w-[95vw] h-[95vh] p-0">
           <DialogHeader className="p-6 pb-2">
-            <DialogTitle>Evidence Image</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Evidence Image</span>
+              {selectedTaskEvidence && selectedTaskEvidence.length > 1 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {currentEvidenceIndex + 1} of {selectedTaskEvidence.length}
+                </span>
+              )}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex items-center justify-center h-[calc(95vh-80px)] p-6 pt-2 overflow-auto">
-            {selectedImage && (
-              <ImageWithAuth
-                srcPath={selectedImage || ''}
-                alt="Evidence"
-                className="w-full h-full object-contain cursor-zoom-in hover:scale-105 transition-transform"
-                onClick={(e) => {
-                  const img = e.currentTarget;
-                  if (img.style.transform === 'scale(2)') {
-                    img.style.transform = 'scale(1)';
-                    img.style.cursor = 'zoom-in';
-                  } else {
-                    img.style.transform = 'scale(2)';
-                    img.style.cursor = 'zoom-out';
-                  }
-                }}
-              />
+          <div className="relative flex items-center justify-center h-[calc(95vh-80px)] p-6 pt-2 overflow-auto">
+            {selectedTaskEvidence && selectedTaskEvidence.length > 1 && (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute left-8 z-10 bg-background/80 hover:bg-background"
+                  onClick={() => setCurrentEvidenceIndex(prev => 
+                    prev > 0 ? prev - 1 : selectedTaskEvidence.length - 1
+                  )}
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-8 z-10 bg-background/80 hover:bg-background"
+                  onClick={() => setCurrentEvidenceIndex(prev => 
+                    prev < selectedTaskEvidence.length - 1 ? prev + 1 : 0
+                  )}
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </Button>
+              </>
+            )}
+            {selectedTaskEvidence && selectedTaskEvidence[currentEvidenceIndex] && (
+              <div className="flex flex-col items-center gap-2">
+                <ImageWithAuth
+                  srcPath={selectedTaskEvidence[currentEvidenceIndex].file_url}
+                  alt="Evidence"
+                  className="max-w-full max-h-[calc(95vh-140px)] object-contain cursor-zoom-in hover:scale-105 transition-transform"
+                  onClick={(e) => {
+                    const img = e.currentTarget;
+                    if (img.style.transform === 'scale(2)') {
+                      img.style.transform = 'scale(1)';
+                      img.style.cursor = 'zoom-in';
+                    } else {
+                      img.style.transform = 'scale(2)';
+                      img.style.cursor = 'zoom-out';
+                    }
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  Uploaded: {formatDateTime(selectedTaskEvidence[currentEvidenceIndex].uploaded_at)}
+                </span>
+              </div>
             )}
           </div>
         </DialogContent>
