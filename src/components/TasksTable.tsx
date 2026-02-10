@@ -230,7 +230,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       
       return true;
     });
-  }, [tasks, statusFilter, templateFilter, facilityFilter, dateFilter, taskTemplates]);
+  }, [tasks, statusFilter, templateFilter, facilityFilter, dateFilter, templateFacilityMap]);
 
   const sortedTasks = [...filteredTasks].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
