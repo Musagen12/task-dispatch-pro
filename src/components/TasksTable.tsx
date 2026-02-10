@@ -194,10 +194,11 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       // Template filter
       if (templateFilter !== 'all' && task.title !== templateFilter) return false;
       
-      // Facility filter - map task title to template to facility
+      // Facility filter - use template_id to match facility
       if (facilityFilter !== 'all') {
-        const template = taskTemplates.find(t => t.title === task.title);
-        if (!template?.facility_id || template.facility_id !== facilityFilter) return false;
+        if (!task.template_id) return false;
+        const facilityName = templateFacilityMap[task.template_id]?.facilityName;
+        if (facilityName !== facilityFilter) return false;
       }
       
       // Date filter
