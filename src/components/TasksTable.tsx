@@ -288,9 +288,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Facilities</SelectItem>
-                {facilities.map((facility) => (
-                  <SelectItem key={facility.id} value={facility.id}>
-                    {facility.name} {facility.building_name ? `(${facility.building_name})` : ''}
+                {facilityOptions.map((facility) => (
+                  <SelectItem key={facility.name} value={facility.name}>
+                    {facility.name}
                   </SelectItem>
                 ))}
               </SelectContent>
