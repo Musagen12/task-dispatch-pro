@@ -11,7 +11,7 @@ import { formatDateTime, formatDate } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { resetTaskStatus, deleteTask, getTaskTemplates, getFacilities, TaskTemplate, Facility } from '@/lib/api';
+import { resetTaskStatus, deleteTask, getTaskTemplate, TaskTemplate } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface Evidence {
