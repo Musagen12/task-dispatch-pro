@@ -56,33 +56,50 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [templateFacilityMap, setTemplateFacilityMap] = useState<Record<string, { facilityName: string; buildingName?: string }>>({});
+  const [facilityOptions, setFacilityOptions] = useState<{ name: string; templateIds: string[] }[]>([]);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-  // Load templates and facilities for facility filtering
+  // Load facility info by fetching each unique template
   useEffect(() => {
-    const loadFilterData = async () => {
-      try {
-        const [templates, facilitiesData] = await Promise.all([
-          getTaskTemplates(),
-          getFacilities()
-        ]);
-        setTaskTemplates(templates);
-        setFacilities(facilitiesData);
-      } catch (error) {
-        console.error('Failed to load filter data:', error);
-      }
-    };
-    loadFilterData();
-  }, []);
+    const loadFacilityData = async () => {
+      const uniqueTemplateIds = [...new Set(tasks.map(t => t.template_id).filter(Boolean))] as string[];
+      const map: Record<string, { facilityName: string; buildingName?: string }> = {};
 
-  // Map task title to facility
-  const getTaskFacility = (taskTitle: string): Facility | undefined => {
-    const template = taskTemplates.find(t => t.title === taskTitle);
-    if (!template?.facility_id) return undefined;
-    return facilities.find(f => f.id === template.facility_id);
+      await Promise.all(
+        uniqueTemplateIds.map(async (templateId) => {
+          try {
+            const template = await getTaskTemplate(templateId);
+            if (template.facility?.name) {
+              map[templateId] = { facilityName: template.facility.name };
+            }
+          } catch (e) {
+            console.error(`Failed to load template ${templateId}:`, e);
+          }
+        })
+      );
+
+      setTemplateFacilityMap(map);
+
+      // Build unique facility options
+      const facilityMap = new Map<string, string[]>();
+      for (const [tid, info] of Object.entries(map)) {
+        const existing = facilityMap.get(info.facilityName) || [];
+        existing.push(tid);
+        facilityMap.set(info.facilityName, existing);
+      }
+      setFacilityOptions(
+        Array.from(facilityMap.entries()).map(([name, templateIds]) => ({ name, templateIds })).sort((a, b) => a.name.localeCompare(b.name))
+      );
+    };
+    if (tasks.length > 0) loadFacilityData();
+  }, [tasks]);
+
+  // Get facility name for a task
+  const getTaskFacilityName = (task: Task): string | undefined => {
+    if (!task.template_id) return undefined;
+    return templateFacilityMap[task.template_id]?.facilityName;
   };
 
   const getFullImageUrl = (filePath: string) => {
