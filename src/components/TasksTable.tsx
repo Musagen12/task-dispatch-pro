@@ -11,7 +11,7 @@ import { formatDateTime, formatDate } from '@/lib/dateUtils';
 import { ImageWithAuth } from '@/components/ImageWithAuth';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { resetTaskStatus, deleteTask, getTaskTemplates, getFacilities, TaskTemplate, Facility } from '@/lib/api';
+import { resetTaskStatus, deleteTask, getTaskTemplate, TaskTemplate } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 
 interface Evidence {
@@ -27,6 +27,7 @@ interface Task {
   status: string;
   assigned_to: string;
   created_at: string;
+  template_id?: string;
   worker_name?: string;
   photo_url?: string;
   evidence: Evidence[];
@@ -55,33 +56,50 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
+  const [templateFacilityMap, setTemplateFacilityMap] = useState<Record<string, { facilityName: string; buildingName?: string }>>({});
+  const [facilityOptions, setFacilityOptions] = useState<{ name: string; templateIds: string[] }[]>([]);
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-  // Load templates and facilities for facility filtering
+  // Load facility info by fetching each unique template
   useEffect(() => {
-    const loadFilterData = async () => {
-      try {
-        const [templates, facilitiesData] = await Promise.all([
-          getTaskTemplates(),
-          getFacilities()
-        ]);
-        setTaskTemplates(templates);
-        setFacilities(facilitiesData);
-      } catch (error) {
-        console.error('Failed to load filter data:', error);
-      }
-    };
-    loadFilterData();
-  }, []);
+    const loadFacilityData = async () => {
+      const uniqueTemplateIds = [...new Set(tasks.map(t => t.template_id).filter(Boolean))] as string[];
+      const map: Record<string, { facilityName: string; buildingName?: string }> = {};
 
-  // Map task title to facility
-  const getTaskFacility = (taskTitle: string): Facility | undefined => {
-    const template = taskTemplates.find(t => t.title === taskTitle);
-    if (!template?.facility_id) return undefined;
-    return facilities.find(f => f.id === template.facility_id);
+      await Promise.all(
+        uniqueTemplateIds.map(async (templateId) => {
+          try {
+            const template = await getTaskTemplate(templateId);
+            if (template.facility?.name) {
+              map[templateId] = { facilityName: template.facility.name };
+            }
+          } catch (e) {
+            console.error(`Failed to load template ${templateId}:`, e);
+          }
+        })
+      );
+
+      setTemplateFacilityMap(map);
+
+      // Build unique facility options
+      const facilityMap = new Map<string, string[]>();
+      for (const [tid, info] of Object.entries(map)) {
+        const existing = facilityMap.get(info.facilityName) || [];
+        existing.push(tid);
+        facilityMap.set(info.facilityName, existing);
+      }
+      setFacilityOptions(
+        Array.from(facilityMap.entries()).map(([name, templateIds]) => ({ name, templateIds })).sort((a, b) => a.name.localeCompare(b.name))
+      );
+    };
+    if (tasks.length > 0) loadFacilityData();
+  }, [tasks]);
+
+  // Get facility name for a task
+  const getTaskFacilityName = (task: Task): string | undefined => {
+    if (!task.template_id) return undefined;
+    return templateFacilityMap[task.template_id]?.facilityName;
   };
 
   const getFullImageUrl = (filePath: string) => {
@@ -176,10 +194,11 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       // Template filter
       if (templateFilter !== 'all' && task.title !== templateFilter) return false;
       
-      // Facility filter - map task title to template to facility
+      // Facility filter - use template_id to match facility
       if (facilityFilter !== 'all') {
-        const template = taskTemplates.find(t => t.title === task.title);
-        if (!template?.facility_id || template.facility_id !== facilityFilter) return false;
+        if (!task.template_id) return false;
+        const facilityName = templateFacilityMap[task.template_id]?.facilityName;
+        if (facilityName !== facilityFilter) return false;
       }
       
       // Date filter
@@ -211,7 +230,7 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
       
       return true;
     });
-  }, [tasks, statusFilter, templateFilter, facilityFilter, dateFilter, taskTemplates]);
+  }, [tasks, statusFilter, templateFilter, facilityFilter, dateFilter, templateFacilityMap]);
 
   const sortedTasks = [...filteredTasks].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -269,9 +288,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Facilities</SelectItem>
-                {facilities.map((facility) => (
-                  <SelectItem key={facility.id} value={facility.id}>
-                    {facility.name} {facility.building_name ? `(${facility.building_name})` : ''}
+                {facilityOptions.map((facility) => (
+                  <SelectItem key={facility.name} value={facility.name}>
+                    {facility.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -320,10 +339,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                   <TableCell>
                     <div>
                       <div className="font-medium">{task.title}</div>
-                      {getTaskFacility(task.title) && (
+                      {getTaskFacilityName(task) && (
                         <div className="text-xs text-muted-foreground">
-                          {getTaskFacility(task.title)?.name}
-                          {getTaskFacility(task.title)?.building_name && ` • ${getTaskFacility(task.title)?.building_name}`}
+                          {getTaskFacilityName(task)}
                         </div>
                       )}
                     </div>
