@@ -27,6 +27,7 @@ interface Task {
   status: string;
   assigned_to: string;
   created_at: string;
+  template_id?: string;
   worker_name?: string;
   photo_url?: string;
   evidence: Evidence[];
