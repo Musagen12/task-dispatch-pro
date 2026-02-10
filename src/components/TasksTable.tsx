@@ -339,10 +339,9 @@ export const TasksTable = ({ tasks, onStatusUpdate, onPhotoUpload, onRefresh, is
                   <TableCell>
                     <div>
                       <div className="font-medium">{task.title}</div>
-                      {getTaskFacility(task.title) && (
+                      {getTaskFacilityName(task) && (
                         <div className="text-xs text-muted-foreground">
-                          {getTaskFacility(task.title)?.name}
-                          {getTaskFacility(task.title)?.building_name && ` • ${getTaskFacility(task.title)?.building_name}`}
+                          {getTaskFacilityName(task)}
                         </div>
                       )}
                     </div>
